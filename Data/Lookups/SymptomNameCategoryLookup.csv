@@ -1,0 +1,89 @@
+"symptom_dataset_id","dataset","symptom_name_raw","symptom_name_formatted","symptom_id","category","category_id"
+1,"CTAS","cough","Cough",1,"Lower respiratory tract",4
+2,"CTAS","fever","Fever",2,"Systemic",5
+3,"CTAS","altered_consciousness","Altered conciousness",3,"Altered state",2
+4,"CTAS","diarrhoea","Diarrhoea",4,"Gastrointestinal",1
+5,"CTAS","fatigue","Fatigue",5,"Systemic",5
+6,"CTAS","headache","Headache",6,"Systemic",5
+7,"CTAS","joint_pain","Joint Pain",7,"Systemic",5
+8,"CTAS","loss_of_appetite","Loss of appetite",8,"Gastrointestinal",1
+9,"CTAS","muscle_ache","Muscle ache",9,"Systemic",5
+10,"CTAS","nausea","Nausea",10,"Gastrointestinal",1
+11,"CTAS","nose_bleed","Nose bleed",11,"Other",6
+12,"CTAS","rash","Rash",12,"Other",6
+13,"CTAS","runny_nose","Rhinitis",13,"Upper respiratory tract",3
+14,"CTAS","seizures","Seizures",14,"Altered state",2
+15,"CTAS","sneezing","Sneezing",15,"Upper respiratory tract",3
+16,"CTAS","sore_throat","Sore throat",16,"Upper respiratory tract",3
+17,"CTAS","vomiting","Vomiting",17,"Gastrointestinal",1
+18,"CTAS","other_symptoms","Other symptoms",18,NA,NA
+19,"CTAS","loss_of_smell_or_taste","Loss of smell or taste",19,"Upper respiratory tract",3
+71,"FF100","fever","Fever",2,"Systemic",5
+72,"FF100","runny_nose","Rhinitis",13,"Upper respiratory tract",3
+73,"FF100","sneezing","Sneezing",15,"Upper respiratory tract",3
+74,"FF100","cough","Cough",1,"Lower respiratory tract",4
+75,"FF100","short_breath","Shortness of breath",22,"Lower respiratory tract",4
+76,"FF100","sore_throat","Sore throat",16,"Upper respiratory tract",3
+77,"FF100","diarrhoea","Diarrhoea",4,"Gastrointestinal",1
+78,"FF100","nausea","Nausea",10,"Gastrointestinal",1
+79,"FF100","vomit","Vomiting",17,"Gastrointestinal",1
+80,"FF100","fatigue","Fatigue",5,"Systemic",5
+81,"FF100","muscle_ache","Muscle ache",9,"Systemic",5
+82,"FF100","joint_ache","Joint Pain",7,"Systemic",5
+83,"FF100","appetite_loss","Loss of appetite",8,"Gastrointestinal",1
+84,"FF100","headache","Headache",6,"Systemic",5
+85,"FF100","seizure","Seizures",14,"Altered state",2
+86,"FF100","alter_consious","Altered conciousness",3,"Altered state",2
+87,"FF100","nose_bleed","Nose bleed",11,"Other",6
+88,"FF100","rash","Rash",12,"Other",6
+89,"FF100","smell_loss","Loss of smell",43,"Upper respiratory tract",3
+59,"ONS","sympt_now_fever","Fever",2,"Systemic",5
+60,"ONS","sympt_now_muscle_ache_myalgia","Muscle ache",9,"Systemic",5
+61,"ONS","sympt_now_fatigue_weakness","Fatigue",5,"Systemic",5
+62,"ONS","sympt_now_sore_throat","Sore throat",16,"Upper respiratory tract",3
+63,"ONS","sympt_now_cough","Cough",1,"Lower respiratory tract",4
+64,"ONS","sympt_now_shortness_of_breath","Shortness of breath",22,"Lower respiratory tract",4
+65,"ONS","sympt_now_headache","Headache",6,"Systemic",5
+66,"ONS","sympt_now_nausea_vomiting","Nausea/vomiting",41,"Gastrointestinal",1
+67,"ONS","sympt_now_abdominal_pain","Abdominal pain",24,"Gastrointestinal",1
+68,"ONS","sympt_now_diarrhoea","Diarrhoea",4,"Gastrointestinal",1
+69,"ONS","sympt_now_loss_of_taste","Loss of taste",42,"Upper respiratory tract",3
+70,"ONS","sympt_now_loss_of_smell","Loss of smell",43,"Upper respiratory tract",3
+20,"Vo","fever","Fever",2,"Systemic",5
+21,"Vo","cough","Cough",1,"Lower respiratory tract",4
+22,"Vo","sore_throat","Sore throat",16,"Upper respiratory tract",3
+23,"Vo","malaise","Malaise",20,NA,NA
+24,"Vo","headache","Headache",6,"Systemic",5
+25,"Vo","diarrhea","Diarrhoea",4,"Gastrointestinal",1
+26,"Vo","conjunctivitis","Conjunctivitis",21,NA,NA
+27,"Vo","rhinitis","Rhinitis",13,"Upper respiratory tract",3
+28,"Zoe","fever","Fever",2,"Systemic",5
+29,"Zoe","persistent_cough","Cough",1,"Lower respiratory tract",4
+30,"Zoe","fatigue","Fatigue",5,"Systemic",5
+31,"Zoe","shortness_of_breath","Shortness of breath",22,"Lower respiratory tract",4
+32,"Zoe","diarrhoea","Diarrhoea",4,"Gastrointestinal",1
+33,"Zoe","delirium","Delirium",23,"Altered state",2
+34,"Zoe","abdominal_pain","Abdominal pain",24,"Gastrointestinal",1
+35,"Zoe","chest_pain","Chest pain",25,"Lower respiratory tract",4
+36,"Zoe","hoarse_voice","Hoarse voice",26,"Upper respiratory tract",3
+37,"Zoe","smell","Altered/loss of smell",27,"Upper respiratory tract",3
+38,"Zoe","headache","Headache",6,"Systemic",5
+39,"Zoe","chills_or_shivers","Chills or shivers",28,NA,NA
+40,"Zoe","eye_soreness","Eye soreness",29,NA,NA
+42,"Zoe","dizzy_light_headed","Dizzy or light headed",30,NA,NA
+43,"Zoe","red_welts_on_face_or_lips","Red welts on face or lips",31,NA,NA
+44,"Zoe","blisters_on_feet","Blisters on feet",32,NA,NA
+45,"Zoe","sore_throat","Sore throat",16,"Upper respiratory tract",3
+46,"Zoe","unusual_muscle_pains","Muscle ache",9,"Systemic",5
+47,"Zoe","skipped_meals","Loss of appetite",8,"Gastrointestinal",1
+48,"Zoe","runny_nose","Rhinitis",13,"Upper respiratory tract",3
+49,"Zoe","sneezing","Sneezing",15,"Upper respiratory tract",3
+50,"Zoe","swollen_glands","Swollen glands",33,NA,NA
+51,"Zoe","rash","Rash",12,"Other",6
+52,"Zoe","skin_burning","Burning skin",34,NA,NA
+53,"Zoe","ear_ringing","Ear ringing",35,NA,NA
+54,"Zoe","earache","Earache",36,NA,NA
+55,"Zoe","feeling_down","Feeling down",37,NA,NA
+56,"Zoe","hair_loss","Hair loss",38,NA,NA
+57,"Zoe","irregular_heartbeat","Irregular heartbeat",39,NA,NA
+58,"Zoe","brain_fog","Brain fog",40,NA,NA

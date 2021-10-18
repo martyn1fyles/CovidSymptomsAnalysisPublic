@@ -1,0 +1,13 @@
+,0,1,symptom_name_raw
+0,11.67905,-0.24761914,sympt_now_fever
+1,11.150985,-1.0409837,sympt_now_muscle_ache_myalgia
+2,11.854617,-0.69488686,sympt_now_fatigue_weakness
+3,12.975138,-1.3557278,sympt_now_sore_throat
+4,12.495442,-1.1187172,sympt_now_cough
+5,10.638825,-1.4801382,sympt_now_shortness_of_breath
+6,13.068768,-0.94133717,sympt_now_headache
+7,4.0223684,13.857901,sympt_now_nausea_vomiting
+8,3.5113235,13.62182,sympt_now_abdominal_pain
+9,3.176358,13.987115,sympt_now_diarrhoea
+10,-7.034473,7.1824384,sympt_now_loss_of_taste
+11,-7.2793565,7.427242,sympt_now_loss_of_smell

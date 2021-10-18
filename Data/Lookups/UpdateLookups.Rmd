@@ -1,0 +1,106 @@
+---
+title: "GenerateUniqueSymptomIDs"
+author: "Martyn Fyles"
+date: "25/11/2020"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+```
+
+
+```{r}
+SymptomNames <- read.csv(
+  "SymptomNamesConfig.csv"
+  )
+```
+
+Look for symptoms that are the same (e.g where the same symptom is described in different ways in different datasets), and merge into a single category
+
+```{r}
+sort(unique(SymptomNames$symptom_name_formatted))
+```
+Assign each symptom a unique id
+
+```{r}
+SymptomNames$symptom_id =vctrs::vec_group_id(SymptomNames$symptom_name_formatted)
+```
+
+```{r}
+SymptomNames
+```
+
+```{r}
+write.csv(
+  SymptomNames,
+  "SymptomNamesLookup.csv",
+  row.names = FALSE
+  )
+```
+
+```{r}
+SymptomCategories <- read.csv(
+  "SymptomCategoriesConfig.csv"
+  )
+SymptomCategories
+```
+
+```{r}
+sort(unique(SymptomCategories$category))
+```
+
+```{r}
+SymptomCategories$category_id=vctrs::vec_group_id(SymptomCategories$category)
+```
+
+```{r}
+write.csv(
+  SymptomCategories,
+  'SymptomCategoriesLookup.csv', row.names = FALSE)
+```
+
+
+```{r}
+Joined = SymptomNames %>%
+  left_join(
+    SymptomCategories,
+    by = c(
+      'symptom_name_formatted')
+    )
+```
+
+```{r}
+Joined
+```
+
+
+```{r}
+SymptomsNameCategoryLookup = Joined %>%
+  select(
+    symptom_dataset_id,
+    dataset,
+    symptom_name_raw,
+    symptom_name_formatted,
+    symptom_id,
+    category,
+    category_id) %>% 
+  arrange(dataset)
+```
+
+```{r}
+write.csv(
+  SymptomsNameCategoryLookup,
+  "SymptomNameCategoryLookup.csv",
+  row.names = FALSE)
+```
+
+```{r}
+categories = SymptomsNameCategoryLookup %>%
+  distinct(category)
+```
+
+```{r}
+write.csv(categories, file = 'CategoriesLookup.csv')
+```
+

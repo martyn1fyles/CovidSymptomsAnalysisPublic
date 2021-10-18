@@ -1,0 +1,427 @@
+---
+title: "UMAP Visualisation"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r}
+source('Visualisation/my_functions.R')
+```
+
+# Libraries
+
+```{r}
+library(ggplot2)
+library(ggrepel)
+library(dplyr)
+library(cowplot)
+library(RColorBrewer)
+library(gridExtra)
+library(ggpubr)
+```
+
+# Load and clean data
+
+```{r}
+SymptomNameCategoryLookup = read.csv('Data/Lookups/SymptomNameCategoryLookup.csv')
+categories = read.csv('Data/Lookups/CategoriesLookup.csv')
+```
+
+# Pillar 2
+
+Load in the data and perform some basic data wrangling and joins to lookup tables.
+
+```{r}
+p2_children = read.csv("Data/Alignments/AlignedUMAP/Pillar2/children_loose.csv")
+p2_adult = read.csv("Data/Alignments/AlignedUMAP/Pillar2/adult_loose.csv")
+p2_elder = read.csv("Data/Alignments/AlignedUMAP/Pillar2/elder_loose.csv")
+
+p2_children_symptom_info = read.csv(
+  'Data/TTI_Pillar2_AgeStratified/Symptom_infoOriginP2Below18.csv')
+p2_adult_symptom_info = read.csv(
+  'Data/TTI_Pillar2_AgeStratified/Symptom_infoOriginP218-54.csv')
+p2_elder_symptom_info = read.csv(
+  'Data/TTI_Pillar2_AgeStratified/Symptom_infoOriginP255Plus.csv')
+
+# rename, makes joins easier
+colnames(p2_children_symptom_info)[1] = 'symptom_name_raw'
+colnames(p2_adult_symptom_info)[1] = 'symptom_name_raw'
+colnames(p2_elder_symptom_info)[1] = 'symptom_name_raw'
+
+p2_children = p2_children %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'CTAS')) %>%
+  inner_join(p2_children_symptom_info)
+p2_adult = p2_adult %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'CTAS')) %>%
+  inner_join(p2_adult_symptom_info)
+p2_elder = p2_elder %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'CTAS')) %>%
+  inner_join(p2_elder_symptom_info)
+```
+
+```{r}
+sgss_children = read.csv("Data/Alignments/AlignedUMAP/SGSS/children_loose.csv")
+sgss_adult = read.csv("Data/Alignments/AlignedUMAP/SGSS/adult_loose.csv")
+sgss_elder = read.csv("Data/Alignments/AlignedUMAP/SGSS/elder_loose.csv")
+
+sgss_children_symptom_info = read.csv(
+  'Data/TTI_SGSS_AgeStratified/Symptom_infoOriginSGSSBelow18.csv')
+sgss_adult_symptom_info = read.csv(
+  'Data/TTI_SGSS_AgeStratified/Symptom_infoOriginSGSS18-54.csv')
+sgss_elder_symptom_info = read.csv(
+  'Data/TTI_SGSS_AgeStratified/Symptom_infoOriginSGSS55Plus.csv')
+
+# rename, makes joins easier
+colnames(sgss_children_symptom_info)[1] = 'symptom_name_raw'
+colnames(sgss_adult_symptom_info)[1] = 'symptom_name_raw'
+colnames(sgss_elder_symptom_info)[1] = 'symptom_name_raw'
+
+sgss_children = sgss_children %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'CTAS')) %>%
+  inner_join(sgss_children_symptom_info)
+sgss_adult = sgss_adult %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'CTAS')) %>%
+  inner_join(sgss_adult_symptom_info)
+sgss_elder = sgss_elder %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'CTAS')) %>%
+  inner_join(sgss_elder_symptom_info)
+```
+
+```{r}
+cis_children = read.csv("Data/Alignments/AlignedUMAP/CIS/children_loose.csv")
+cis_adult = read.csv("Data/Alignments/AlignedUMAP/CIS/adult_loose.csv")
+cis_elder = read.csv("Data/Alignments/AlignedUMAP/CIS/elder_loose.csv")
+
+cis_children_symptom_info = read.csv(
+  'Data/CommunityInfectionSurveyAgeStratified/symptoms_info_18.csv')
+cis_adult_symptom_info = read.csv(
+  'Data/CommunityInfectionSurveyAgeStratified/symptoms_info_18_54.csv')
+cis_elder_symptom_info = read.csv(
+  'Data/CommunityInfectionSurveyAgeStratified/symptoms_info_55.csv')
+
+# rename, makes joins easier
+colnames(cis_children_symptom_info)[2] = 'symptom_name_raw'
+colnames(cis_adult_symptom_info)[2] = 'symptom_name_raw'
+colnames(cis_elder_symptom_info)[2] = 'symptom_name_raw'
+
+cis_children = cis_children %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'ONS')) %>%
+  inner_join(cis_children_symptom_info, by = c('symptom_name_raw'))
+cis_adult = cis_adult %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'ONS')) %>%
+  inner_join(cis_adult_symptom_info, by = c('symptom_name_raw'))
+cis_elder = cis_elder %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'ONS')) %>%
+  inner_join(cis_elder_symptom_info, by = c('symptom_name_raw'))
+
+# multiply by 100 to make consistent with other datasets
+cis_children$proportion_of_cases_with_symptom = cis_children$proportion_frompositives / 100
+cis_adult$proportion_of_cases_with_symptom = cis_adult$proportion_frompositives / 100
+cis_elder$proportion_of_cases_with_symptom = cis_elder$proportion_frompositives / 100
+```
+
+```{r}
+css_children = read.csv("Data/Alignments/AlignedUMAP/CSS/children_loose.csv")
+css_adult = read.csv("Data/Alignments/AlignedUMAP/CSS/adult_loose.csv")
+css_elder = read.csv("Data/Alignments/AlignedUMAP/CSS/elder_loose.csv")
+
+css_children_symptom_info = read.csv(
+  'Data/CovidSymptomStudyAgeSeperated/DemographicSymptom_children.csv')
+css_adult_symptom_info = read.csv(
+  'Data/CovidSymptomStudyAgeSeperated/DemographicSymptom_adults.csv')
+css_elder_symptom_info = read.csv(
+  'Data/CovidSymptomStudyAgeSeperated/DemographicSymptom_elder.csv')
+
+colnames(css_children_symptom_info)[2] = 'symptom_name_raw'
+colnames(css_adult_symptom_info)[2] = 'symptom_name_raw'
+colnames(css_elder_symptom_info)[2] = 'symptom_name_raw'
+
+css_children = css_children %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'Zoe')) %>%
+  inner_join(css_children_symptom_info, by = c('symptom_name_raw'))
+css_adult = css_adult %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'Zoe')) %>%
+  inner_join(css_adult_symptom_info, by = c('symptom_name_raw'))
+css_elder = css_elder %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'Zoe')) %>%
+  inner_join(css_elder_symptom_info, by = c('symptom_name_raw'))
+
+css_children$proportion_of_cases_with_symptom = css_children$proportion
+css_adult$proportion_of_cases_with_symptom = css_adult$proportion
+css_elder$proportion_of_cases_with_symptom = css_elder$proportion
+```
+
+Create some ggplot objects that can be shared across the plots.
+
+```{r}
+scaling_factor = 100
+bubble_plot = geom_point(aes(size = scaling_factor * proportion_of_cases_with_symptom))
+bubble_plot_zoe = geom_point(aes(size = scaling_factor * proportion))
+
+symptom_labels = labs(
+    size = 'Proportion of cases\nwith symptom (%)',
+    color = 'Symptom category'
+    )
+
+category_legend = guides(colour = guide_legend(override.aes = list(size=5)))
+
+size_scaling =  scale_size_continuous(
+    breaks = c(0, 20, 40, 60, 80, 100),
+    labels = c(0, 20, 40, 60, 80, 100),
+    limits = c(0, 100),
+    range = c(2,6)
+   )
+```
+
+
+# Plot Data
+
+This function takes several input datasets, and returns axes that will work for all the datasets
+
+```{r}
+compute_ideal_axes = function(dataset_children, dataset_adult, dataset_elder){
+  # computing axes to share across the embedding plots
+
+  x_max = max(c(dataset_children$X0, dataset_adult$X0, dataset_elder$X0))
+  x_min = min(c(dataset_children$X0, dataset_adult$X0, dataset_elder$X0))
+  y_max = max(c(dataset_children$X1, dataset_adult$X1, dataset_elder$X1))
+  y_min = min(c(dataset_children$X1, dataset_adult$X1, dataset_elder$X1))
+  
+  x_center = (x_max + x_min) / 2
+  y_center = (y_max + y_min) / 2
+  
+  x_len = x_max - x_min
+  y_len = y_max - y_min
+  
+  len = max(x_len, y_len)
+  
+  coord_equal(
+    ratio = 1, 
+    xlim = c(x_center - len / 2, x_center + len / 2), 
+    ylim = c(y_center - len / 2, y_center + len / 2))
+}
+```
+
+Compute axes for all datasets
+
+```{r}
+pillar_2_axes = compute_ideal_axes(
+  dataset_children = p2_children,
+  dataset_adult = p2_adult,
+  dataset_elder = p2_elder)
+
+sgss_axes = compute_ideal_axes(
+  dataset_children = sgss_children,
+  dataset_adult = sgss_adult,
+  dataset_elder = sgss_elder)
+
+cis_axes = compute_ideal_axes(
+  dataset_children = cis_children,
+  dataset_adult = cis_adult,
+  dataset_elder = cis_elder)
+
+css_axes = compute_ideal_axes(
+  dataset_children = css_children,
+  dataset_adult = css_adult,
+  dataset_elder = css_elder)
+```
+
+
+```{r}
+# plotting function
+create_bubble_plot = function(dataset, title, shared_axes){
+  ggplot(
+    dataset,
+    aes(
+      x=X0,
+      y=X1,
+      label=symptom_name_formatted,
+      color = category)) +
+    bubble_plot +
+    labs(
+      title = title) +
+    geom_text_repel(
+      inherit.aes = FALSE,
+      aes(x=X0, y=X1, label = symptom_name_formatted),
+      size = 2.5,
+      point.padding = 0.5,
+      max.overlaps = 20) +
+    theme_cowplot() +
+    symptom_labels +
+    size_scaling + 
+    colour_scale_all +
+    shared_axes + 
+    theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+    grids() + 
+    category_legend +
+    theme(legend.position="right")
+}
+```
+
+# create pillar 2 plots
+
+```{r}
+p2_children_plot = create_bubble_plot(p2_children, title = 'a', shared_axes = pillar_2_axes)
+p2_children_plot
+```
+
+```{r}
+p2_adult_plot = create_bubble_plot(p2_adult, title = 'b', shared_axes = pillar_2_axes)
+p2_adult_plot
+```
+
+
+```{r}
+p2_elder_plot = create_bubble_plot(p2_elder, title = 'c', shared_axes = pillar_2_axes)
+p2_elder_plot
+```
+
+# create sgss plots
+
+```{r}
+sgss_children_plot = create_bubble_plot(sgss_children, title = 'a', shared_axes = sgss_axes)
+sgss_children_plot
+```
+
+```{r}
+sgss_adult_plot = create_bubble_plot(sgss_adult, title = 'b', shared_axes = sgss_axes)
+sgss_adult_plot
+```
+
+```{r}
+sgss_elder_plot = create_bubble_plot(sgss_elder, title = 'c', shared_axes = sgss_axes)
+sgss_elder_plot
+```
+
+## CIS
+
+```{r}
+cis_children_plot = create_bubble_plot(cis_children, title = 'a', shared_axes = cis_axes)
+cis_children_plot
+```
+
+```{r}
+cis_adult_plot = create_bubble_plot(cis_adult, title = 'b', shared_axes = cis_axes)
+cis_adult_plot
+```
+
+```{r}
+cis_elder_plot = create_bubble_plot(cis_elder, title = 'c', shared_axes = cis_axes)
+cis_elder_plot
+```
+
+## CSS
+
+```{r}
+css_children_plot = create_bubble_plot(css_children, title = 'a', shared_axes = css_axes)
+css_children_plot
+```
+
+```{r}
+css_adult_plot = create_bubble_plot(css_adult, title = 'b', shared_axes = css_axes)
+css_adult_plot
+```
+
+```{r}
+css_elder_plot = create_bubble_plot(css_elder, title = 'c', shared_axes = css_axes)
+css_elder_plot
+```
+
+
+# Arranging
+
+## All main results
+
+```{r}
+blankPlot <- ggplot()+geom_blank(aes(1,1)) + 
+  cowplot::theme_nothing()
+
+legend = get_legend(
+  p2_children_plot + 
+    theme(legend.position = "right") + 
+    theme(legend.position = c(0.5, 0.5)))
+
+arranged = ggarrange(
+  p2_children_plot + theme(legend.position = "none"),
+  p2_adult_plot + theme(legend.position = "none"),
+  p2_elder_plot + theme(legend.position = "none"),
+  legend,
+  ncol = 2,
+  nrow = 2) + 
+  colour_scale_all +
+  guides(colour = guide_legend(override.aes = list(size=10)))
+
+ggsave('Figures/Alignment/p2_age_stratified_loose.png', arranged, height = 9, width = 9)
+```
+
+
+```{r}
+blankPlot <- ggplot()+geom_blank(aes(1,1)) + 
+  cowplot::theme_nothing()
+
+legend = get_legend(
+  sgss_children_plot + 
+    theme(legend.position = "right") + 
+    theme(legend.position = c(0.5, 0.5)))
+
+arranged = ggarrange(
+  sgss_children_plot + theme(legend.position = "none"),
+  sgss_adult_plot + theme(legend.position = "none"),
+  sgss_elder_plot + theme(legend.position = "none"),
+  legend,
+  ncol = 2,
+  nrow = 2) + 
+  colour_scale_all +
+  guides(colour = guide_legend(override.aes = list(size=10)))
+
+ggsave('Figures/Alignment/sgss_age_stratified_loose.png', arranged, height = 9, width = 9)
+```
+
+```{r}
+blankPlot <- ggplot()+geom_blank(aes(1,1)) + 
+  cowplot::theme_nothing()
+
+legend = get_legend(
+  sgss_children_plot + 
+    theme(legend.position = "right") + 
+    theme(legend.position = c(0.5, 0.5)))
+
+arranged = ggarrange(
+  cis_children_plot + theme(legend.position = "none"),
+  cis_adult_plot + theme(legend.position = "none"),
+  cis_elder_plot + theme(legend.position = "none"),
+  legend,
+  ncol = 2,
+  nrow = 2) + 
+  colour_scale_all +
+  guides(colour = guide_legend(override.aes = list(size=10)))
+
+ggsave('Figures/Alignment/cis_age_stratified_loose.png', arranged, height = 9, width = 9)
+```
+
+```{r}
+blankPlot <- ggplot()+geom_blank(aes(1,1)) + 
+  cowplot::theme_nothing()
+
+legend = get_legend(
+  sgss_children_plot + 
+    theme(legend.position = "right") + 
+    theme(legend.position = c(0.5, 0.5)))
+
+arranged = ggarrange(
+  css_children_plot + theme(legend.position = "none"),
+  css_adult_plot + theme(legend.position = "none"),
+  css_elder_plot + theme(legend.position = "none"),
+  legend,
+  ncol = 2,
+  nrow = 2) + 
+  colour_scale_all +
+  guides(colour = guide_legend(override.aes = list(size=10)))
+
+ggsave('Figures/Alignment/css_age_stratified_loose.png', arranged, height = 9, width = 9)
+```

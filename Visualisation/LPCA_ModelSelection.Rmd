@@ -1,0 +1,436 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+---
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(ggpubr)
+library(knitr)
+```
+
+# Selected numbers of components:
+
+See further down for model selection visualisations.
+
+```{r, echo = FALSE, results = 'asis'}
+dataset = c('CIS', 'CSS', 'P2', 'SGSS')
+all = c(2,1,1,2)
+children = c(1,1,1,1)
+adults = c(2,1,1,2)
+elder = c(1,1,1,1)
+
+kable(data.frame(dataset, all, children, adults, elder))
+```
+
+
+```{r}
+plot_deviance <- function(deviance_data, k_hat) {
+  p1 = deviance_data %>%
+    ggplot(aes(x = X, y = prop_dev)) + 
+    geom_line() + 
+    geom_point() +
+    xlab('k') + 
+    ylab('Proportion Bernoulli deviance explained') + 
+    geom_vline(
+      xintercept = k_hat + 0.5,
+      color = 'red',
+      linetype = "longdash") + 
+    scale_x_continuous(breaks = 0:10) +
+    ggtitle('a')
+  
+  p2 = deviance_data %>%
+    ggplot(aes(x = X, y = marg_dev)) + 
+    geom_line() + 
+    geom_point() +
+    xlab('k') + 
+    ylab('Marginal Bernoulli deviance') + 
+    geom_vline(
+      xintercept = k_hat + 0.5,
+      color = 'red',
+      linetype = "longdash") + 
+    scale_x_continuous(breaks = 0:10) +
+    ggtitle('b')
+  
+  return(ggarrange(p1, p2))
+}
+```
+
+
+# Community Infection Survey
+
+```{r}
+CIS = read.csv('Data/CommunityInfectionSurvey/LPCA/LPCA_deviance.csv')
+
+# age stratified
+CIS_18 = read.csv('Data/CommunityInfectionSurveyAgeStratified/LPCA/LPCA_deviance_18.csv')
+CIS_18_54 = read.csv('Data/CommunityInfectionSurveyAgeStratified/LPCA/LPCA_deviance_18_54.csv')
+CIS_55 = read.csv('Data/CommunityInfectionSurveyAgeStratified/LPCA/LPCA_deviance_55.csv')
+```
+
+## All
+
+```{r}
+number_components_selected = 2
+
+plot_deviance(CIS, number_components_selected)
+```
+
+```{r}
+out = plot_deviance(CIS, number_components_selected)
+ggsave(filename = 'LPCA_ModelSelectionPlot.png', output, width = 7, height = 4)
+```
+
+
+## Children
+
+```{r}
+number_components_selected = 1
+
+plot_deviance(CIS_18, number_components_selected)
+```
+
+## Adults
+
+```{r}
+number_components_selected = 2
+
+plot_deviance(CIS_18_54, number_components_selected)
+```
+
+## Elders
+
+```{r}
+number_components_selected = 1
+
+plot_deviance(CIS_55, number_components_selected)
+```
+
+# Covid Symptom Study
+
+```{r}
+CSS = read.csv('Data/CovidSymptomStudy/LPCA/LPCADevianceWide.csv')
+
+CSS_18 = read.csv('Data/CovidSymptomStudyAgeSeperated/LPCA/LPCADevianceChildren.csv')
+CSS_18_54 = read.csv('Data/CovidSymptomStudyAgeSeperated/LPCA/LPCADevianceAdults.csv')
+CSS_55 = read.csv('Data/CovidSymptomStudyAgeSeperated/LPCA/LPCADevianceElder.csv')
+```
+
+## All
+
+```{r}
+number_components_selected = 1
+
+plot_deviance(CSS, number_components_selected)
+```
+
+## Children
+
+```{r}
+number_components_selected = 1
+
+plot_deviance(CSS_18, number_components_selected)
+```
+
+## Adults
+
+```{r}
+number_components_selected = 1
+
+plot_deviance(CSS_18_54, number_components_selected)
+```
+
+## Elders
+
+```{r}
+number_components_selected = 1
+
+plot_deviance(CIS_55, number_components_selected)
+```
+
+# Pillar 2 
+
+```{r}
+p2 = read.csv('Data/TTI_Pillar2/LPCA/LPCA_deviance_Origin_P2.csv')
+
+p2_18 = read.csv('Data/TTI_Pillar2_AgeStratified/LPCA/LPCA_deviance_Origin_P2_Below_18.csv')
+p2_18_54 = read.csv('Data/TTI_Pillar2_AgeStratified/LPCA/LPCA_deviance_Origin_P2_Between_18_and_54.csv')
+p2_55 = read.csv('Data/TTI_Pillar2_AgeStratified/LPCA/LPCA_deviance_Origin_P2_55_Plus.csv')
+```
+
+## All
+
+```{r}
+number_components_selected = 1
+
+plot_deviance(p2, number_components_selected)
+```
+
+## Children
+
+```{r}
+number_components_selected = 1
+
+plot_deviance(p2_18, number_components_selected)
+```
+
+## Adults
+
+```{r}
+number_components_selected = 1
+
+plot_deviance(p2_18_54, number_components_selected)
+```
+
+## Elders
+
+```{r}
+number_components_selected = 1
+
+plot_deviance(p2_55, number_components_selected)
+```
+
+# SGSS
+
+
+```{r}
+sgss = read.csv('Data/TTI_SGSS/LPCA/LPCA_deviance_Origin_SGSS.csv')
+
+sgss_18 = read.csv('Data/TTI_SGSS_AgeStratified/LPCA/LPCA_deviance_Origin_SGSS_Below_18.csv')
+sgss_18_54 = read.csv('Data/TTI_SGSS_AgeStratified/LPCA/LPCA_deviance_Origin_SGSS_Between_18_54.csv')
+sgss_55 = read.csv('Data/TTI_SGSS_AgeStratified/LPCA/LPCA_deviance_Origin_SGSS_55_Plus.csv')
+```
+
+## All
+
+```{r}
+number_components_selected = 2
+
+plot_deviance(sgss, number_components_selected)
+```
+
+## Children
+
+```{r}
+number_components_selected = 1
+
+plot_deviance(sgss_18, number_components_selected)
+```
+
+## Adults
+
+```{r}
+number_components_selected = 2
+
+plot_deviance(sgss_18_54, number_components_selected)
+```
+
+## Elders
+
+```{r}
+number_components_selected = 1
+
+plot_deviance(sgss_55, number_components_selected)
+```
+
+
+# Cross dataset comparisons
+
+```{r}
+compare_dev_cross_dataset = function(dev_data){
+  p1 = ggplot(dev_data, aes(x=X, y=prop_dev, group=dataset, col=dataset, fill=dataset)) +
+    geom_point(alpha = 0.7) +
+    geom_line(size=1,alpha = 0.7) + 
+    xlab('k') + 
+    ylab('Proportion of deviance explained') + 
+    scale_x_continuous(breaks = 0:10)
+
+  p2 = ggplot(dev_data, aes(x=X, y=marg_dev, group=dataset, col=dataset, fill=dataset)) +
+    geom_point(alpha = 0.7) +
+    geom_line(size=1,alpha = 0.7) + 
+    xlab('k') + 
+    ylab('Proportion of deviance explained') + 
+    scale_x_continuous(breaks = 0:10)
+  
+  return(ggarrange(p1, p2, common.legend = TRUE))
+}
+```
+
+
+# Inter dataset comparisons
+
+## CIS
+
+```{r}
+CIS$dataset = 'All'
+CIS_18$dataset = 'Children'
+CIS_18_54$dataset = 'Adults'
+CIS_55$dataset = 'Elders'
+
+all_CIS = rbind(CIS, CIS_18, CIS_18_54, CIS_55)
+```
+
+```{r}
+out = compare_dev_cross_dataset(all_CIS)
+```
+
+```{r}
+out
+```
+
+
+Would suggest 2 components, but children look like 1.
+
+## CSS
+
+```{r}
+CSS$dataset = 'All'
+CSS_18$dataset = 'Children'
+CSS_18_54$dataset = 'Adults'
+CSS_55$dataset = 'Elders'
+
+all_CSS = rbind(CSS, CSS_18, CSS_18_54, CSS_55)
+```
+
+```{r}
+out = compare_dev_cross_dataset(all_CSS)
+```
+
+```{r}
+out
+```
+
+
+Would suggest just one component.
+
+# Pillar 2
+
+```{r}
+p2$dataset = 'All'
+p2_18$dataset = 'Children'
+p2_18_54$dataset = 'Adults'
+p2_55$dataset = 'Elders'
+
+all_p2 = rbind(p2, p2_18, p2_18_54, p2_55)
+```
+
+```{r}
+out = compare_dev_cross_dataset(all_p2)
+```
+
+```{r}
+out
+```
+
+
+Looks like just one component to me.
+
+# SGSS
+
+```{r}
+sgss$dataset = 'All'
+sgss_18$dataset = 'Children'
+sgss_18_54$dataset = 'Adults'
+sgss_55$dataset = 'Elders'
+
+all_sgss = rbind(sgss, sgss_18, sgss_18_54, sgss_55)
+```
+
+```{r}
+out = compare_dev_cross_dataset(all_sgss)
+```
+
+```{r}
+out
+```
+
+2 components: adults, all
+1 component: children, elders
+
+## All
+
+```{r}
+CIS$dataset = 'CIS'
+CSS$dataset = 'CSS'
+p2$dataset = 'Pillar 2'
+sgss$dataset = 'SGSS'
+
+all = rbind(CIS, CSS, p2, sgss)
+```
+
+```{r}
+out = compare_dev_cross_dataset(all)
+```
+
+```{r}
+out
+```
+
+
+CIS looks like 2, others look like 1
+
+## Children
+
+```{r}
+CIS_18$dataset = 'CIS'
+CSS_18$dataset = 'CSS'
+p2_18$dataset = 'Pillar 2'
+sgss_18$dataset = 'SGSS'
+
+all_18 = rbind(CIS_18, CSS_18, p2_18, sgss_18)
+```
+
+```{r}
+out = compare_dev_cross_dataset(all_18)
+```
+
+```{r}
+out
+```
+
+All look like 1 component to me
+
+## Adults
+
+```{r}
+CIS_18_54$dataset = 'CIS'
+CSS_18_54$dataset = 'CSS'
+p2_18_54$dataset = 'Pillar 2'
+sgss_18_54$dataset = 'SGSS'
+
+all_18_54 = rbind(CIS_18_54, CSS_18_54, p2_18_54, sgss_18_54)
+```
+
+```{r}
+out = compare_dev_cross_dataset(all_18_54)
+```
+
+```{r}
+out
+```
+
+CIS has 2, others have 1
+
+## Elders
+
+```{r}
+CIS_55$dataset = 'CIS'
+CSS_55$dataset = 'CSS'
+p2_55$dataset = 'Pillar 2'
+sgss_55$dataset = 'SGSS'
+
+all_55 = rbind(CIS_55, CSS_55, p2_55, sgss_55)
+```
+
+```{r}
+out = compare_dev_cross_dataset(all_55)
+```
+
+```{r}
+out
+```

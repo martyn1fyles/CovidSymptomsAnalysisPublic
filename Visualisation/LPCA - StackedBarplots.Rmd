@@ -1,0 +1,1048 @@
+---
+title: "LPCA Visualisation"
+output: html_notebook
+---
+
+```{r}
+source('Visualisation/my_functions.R')
+```
+
+
+# Libraries
+
+```{r}
+library(ggplot2)
+library(ggrepel)
+library(reshape)
+library(dplyr)
+library(cowplot)
+library(RColorBrewer)
+library(ggpubr)
+```
+
+# Load data
+
+```{r}
+# entire populations
+CTAS_pillar2 <- read.csv("Data/TTI_Pillar2/LPCA/symptoms_dataOriginP2_symp_loadings_K_2_par.csv")
+CTAS_sgss <- read.csv("Data/TTI_SGSS/LPCA/symptoms_dataOriginSGSS_symp_loadings_K_2_par.csv")
+CSS <- read.csv("Data/CovidSymptomStudy/LPCA/LPCA_SymptomLoadings_k2.csv")
+ONS <- read.csv('Data/CommunityInfectionSurvey/LPCA/LPCA_SymptomLoadings_k_2.csv')
+
+# Zoe
+Zoe_children <- read.csv("Data/CovidSymptomStudyAgeSeperated/LPCA/LPCA_SymptomLoadings_k2_kids.csv")
+Zoe_adults <- read.csv("Data/CovidSymptomStudyAgeSeperated/LPCA/LPCA_SymptomLoadings_k2_adults.csv")
+Zoe_elder <- read.csv("Data/CovidSymptomStudyAgeSeperated/LPCA/LPCA_SymptomLoadings_k2_elder.csv")
+
+# ONS
+ONS_children <- read.csv('Data/CommunityInfectionSurveyAgeStratified/LPCA/LPCA_SymptomLoadings_18_k_2.csv')
+ONS_adults <- read.csv('Data/CommunityInfectionSurveyAgeStratified/LPCA/LPCA_SymptomLoadings_18_55_k_2.csv')
+ONS_elder <- read.csv('Data/CommunityInfectionSurveyAgeStratified/LPCA/LPCA_SymptomLoadings_56_k_2.csv')
+
+# Pillar 2
+p2_children <- read.csv('Data/TTI_Pillar2_AgeStratified/LPCA/symptoms_dataOriginP2Below18_symp_loadings_K_2_par.csv')
+p2_adults <- read.csv('Data/TTI_Pillar2_AgeStratified/LPCA/symptoms_dataOriginP218-54_symp_loadings_K_2_par.csv')
+p2_elder <- read.csv('Data/TTI_Pillar2_AgeStratified/LPCA/symptoms_dataOriginP255Plus_symp_loadings_K_2_par.csv')
+
+# SGSS
+sgss_children <- read.csv('Data/TTI_SGSS_AgeStratified/LPCA/symptoms_dataOriginSGSSBelow18_symp_loadings_K_2_par.csv')
+sgss_adults <- read.csv('Data/TTI_SGSS_AgeStratified/LPCA/symptoms_dataOriginSGSS18-54_symp_loadings_K_2_par.csv')
+sgss_elder <- read.csv('Data/TTI_SGSS_AgeStratified/LPCA/symptoms_dataOriginSGSS55Plus_symp_loadings_K_2_par.csv')
+```
+
+
+# Aligning principal components
+Multiplying a principal component by -1 does not change the interpretation. We align some of the principal components for consistency of results.
+
+```{r}
+ONS_children = ONS_children %>%
+  mutate(V2 = V2 * -1)
+
+p2_children = p2_children %>%
+  mutate(V2 = V2 * -1)
+
+sgss_adults = sgss_adults %>%
+  mutate(V2 = V2 * -1)
+
+sgss_elder = sgss_elder %>%
+  mutate(V2 = V2 * -1)
+
+sgss_children = sgss_children %>%
+  mutate(V1 = V1 * -1)
+
+CSS = CSS %>%
+  mutate(V2 = V2 * -1)
+
+Zoe_adults = Zoe_adults %>%
+  mutate(V2 = V2 * -1)
+
+Zoe_elder = Zoe_elder %>%
+  mutate(V2 = V2 * -1)
+```
+
+
+```{r}
+SymptomNameLookup = read.csv('Data/Lookups/SymptomNameCategoryLookup.csv')
+categories = read.csv('Data/Lookups/CategoriesLookup.csv')
+```
+
+# Clean data
+
+```{r}
+# entire populations
+colnames(CTAS_pillar2) <- c('symptom_name_raw', 'PC1', 'PC2')
+colnames(CTAS_sgss) <- c('symptom_name_raw', 'PC1', 'PC2')
+colnames(CSS) <- c('symptom_name_raw', 'PC1', 'PC2')
+colnames(ONS) <- c('symptom_name_raw', 'PC1', 'PC2')
+
+# zoe
+colnames(Zoe_children) <- c('symptom_name_raw', 'PC1', 'PC2')
+colnames(Zoe_adults) <- c('symptom_name_raw', 'PC1', 'PC2')
+colnames(Zoe_elder) <- c('symptom_name_raw', 'PC1', 'PC2')
+
+# SGSS
+colnames(sgss_children) <- c('symptom_name_raw', 'PC1', 'PC2')
+colnames(sgss_adults) <- c('symptom_name_raw', 'PC1', 'PC2')
+colnames(sgss_elder) <- c('symptom_name_raw', 'PC1', 'PC2')
+
+# Pillar 2
+colnames(p2_children) <- c('symptom_name_raw', 'PC1', 'PC2')
+colnames(p2_adults) <- c('symptom_name_raw', 'PC1', 'PC2')
+colnames(p2_elder) <- c('symptom_name_raw', 'PC1', 'PC2')
+
+# ONS
+colnames(ONS_children) <- c('symptom_name_raw', 'PC1', 'PC2')
+colnames(ONS_adults) <- c('symptom_name_raw', 'PC1', 'PC2')
+colnames(ONS_elder) <- c('symptom_name_raw', 'PC1', 'PC2')
+
+```
+
+```{r}
+# entire populations
+ONS_long = melt(ONS) %>%
+inner_join(
+   SymptomNameLookup %>% filter(dataset == 'ONS'),
+   by = c('symptom_name_raw'))
+
+
+CTAS_pillar2_long = melt(CTAS_pillar2) %>%
+  inner_join(
+    SymptomNameLookup %>% filter(dataset == 'CTAS'),
+    by = c('symptom_name_raw'))
+
+CTAS_sgss_long = melt(CTAS_sgss) %>%
+  inner_join(
+    SymptomNameLookup %>% filter(dataset == 'CTAS'),
+    by = c('symptom_name_raw')) 
+
+CSS_long = melt(CSS) %>%
+  left_join(
+    SymptomNameLookup %>% filter(dataset == 'Zoe'),
+    by = c('symptom_name_raw'))
+
+# Zoe - age stratified
+Zoe_long_children = melt(Zoe_children) %>%
+  left_join(
+    SymptomNameLookup %>% filter(dataset == 'Zoe'),
+    by = c('symptom_name_raw'))
+
+ Zoe_long_adults = melt(Zoe_adults) %>%
+   left_join(
+     SymptomNameLookup %>% filter(dataset == 'Zoe'),
+     by = c('symptom_name_raw'))
+
+ Zoe_long_elder = melt(Zoe_elder) %>%
+   left_join(
+     SymptomNameLookup %>% filter(dataset == 'Zoe'),
+     by = c('symptom_name_raw'))
+
+# Pillar 2 - age stratified
+p2_children_long = melt(p2_children) %>%
+  left_join(
+    SymptomNameLookup %>% filter(dataset == 'CTAS'),
+    by = c('symptom_name_raw'))
+
+p2_adults_long = melt(p2_adults) %>%
+  left_join(
+    SymptomNameLookup %>% filter(dataset == 'CTAS'),
+    by = c('symptom_name_raw'))
+
+p2_elder_long = melt(p2_elder) %>%
+  left_join(
+    SymptomNameLookup %>% filter(dataset == 'CTAS'),
+    by = c('symptom_name_raw'))
+
+# SGSS - age stratified
+sgss_children_long = melt(sgss_children) %>%
+  left_join(
+    SymptomNameLookup %>% filter(dataset == 'CTAS'),
+    by = c('symptom_name_raw'))
+
+sgss_adults_long = melt(sgss_adults) %>%
+  left_join(
+    SymptomNameLookup %>% filter(dataset == 'CTAS'),
+    by = c('symptom_name_raw'))
+
+sgss_elder_long = melt(sgss_elder) %>%
+  left_join(
+    SymptomNameLookup %>% filter(dataset == 'CTAS'),
+    by = c('symptom_name_raw'))
+
+
+# ONS - age stratified
+ONS_children_long = melt(ONS_children) %>%
+  left_join(
+    SymptomNameLookup %>% filter(dataset == 'ONS'),
+    by = c('symptom_name_raw'))
+
+ONS_adults_long = melt(ONS_adults) %>%
+  left_join(
+    SymptomNameLookup %>% filter(dataset == 'ONS'),
+    by = c('symptom_name_raw'))
+
+ONS_elder_long = melt(ONS_elder) %>%
+  left_join(
+    SymptomNameLookup %>% filter(dataset == 'ONS'),
+    by = c('symptom_name_raw'))
+```
+
+# I removed the joins to symptom infor here, might need to add back in
+
+```{r}
+CTAS_pillar2 = CTAS_pillar2 %>%
+  inner_join(SymptomNameLookup %>% filter(dataset == 'CTAS'))
+
+CTAS_sgss = CTAS_sgss %>%
+  inner_join(SymptomNameLookup %>% filter(dataset == 'CTAS'))
+
+CSS = CSS %>%
+   left_join(SymptomNameLookup %>% filter(dataset == 'Zoe'))
+
+ONS = ONS %>%
+  inner_join(SymptomNameLookup %>% filter(dataset == 'ONS'))
+
+# zoe age stratified 
+Zoe_children = Zoe_children %>%
+  left_join(SymptomNameLookup %>% filter(dataset == 'Zoe'))
+
+Zoe_adults = Zoe_adults %>%
+   left_join(SymptomNameLookup %>% filter(dataset == 'Zoe'))
+
+Zoe_elder = Zoe_elder %>%
+   left_join(SymptomNameLookup %>% filter(dataset == 'Zoe'))
+
+# pillar 2 age stratified 
+p2_children = p2_children %>%
+  left_join(SymptomNameLookup %>% filter(dataset == 'CTAS'))
+
+p2_adults = p2_adults %>%
+  left_join(SymptomNameLookup %>% filter(dataset == 'CTAS'))
+
+p2_elder = p2_elder %>%
+  left_join(SymptomNameLookup %>% filter(dataset == 'CTAS'))
+
+# sgss age stratified 
+sgss_children = sgss_children %>%
+  left_join(SymptomNameLookup %>% filter(dataset == 'CTAS'))
+
+sgss_adults = sgss_adults %>%
+  left_join(SymptomNameLookup %>% filter(dataset == 'CTAS'))
+
+sgss_elder = sgss_elder %>%
+  left_join(SymptomNameLookup %>% filter(dataset == 'CTAS'))
+
+# ONS age stratified 
+ONS_children = ONS_children %>%
+  left_join(SymptomNameLookup %>% filter(dataset == 'ONS'))
+
+ONS_adults = ONS_adults %>%
+  left_join(SymptomNameLookup %>% filter(dataset == 'ONS'))
+
+ONS_elder = ONS_elder %>%
+  left_join(SymptomNameLookup %>% filter(dataset == 'ONS'))
+```
+
+# Vertical barplots
+
+We try a third type of barplot to represent the logistic PCA components. The heatmaps are quite difficult to interpret in several ways, and it is difficult to encode category information onto them without making them visually challenging to read.
+
+Instead, several vertical barplots with the bar fill are possibly a better representation.
+
+# Pillar 2 - All
+
+```{r}
+levels_p2 = unique(
+  CTAS_pillar2_long$symptom_name_formatted[
+    order(
+      CTAS_pillar2_long$category,
+      CTAS_pillar2_long$symptom_name_formatted,
+      decreasing=TRUE
+      )
+    ]
+  )
+
+reordered_factor <- factor(
+  CTAS_pillar2_long$symptom_name_formatted,
+  levels=levels_p2,
+  ordered = TRUE)
+
+CTAS_pillar2_long$symptom_name_formatted <- factor(
+  CTAS_pillar2_long$symptom_name_formatted,
+  levels=levels(reordered_factor)
+  )
+```
+
+
+```{r}
+p2_bar = CTAS_pillar2_long %>%
+  filter(variable %in% c('PC1', 'PC2', 'PC3', 'PC4', 'PC5')) %>%
+  group_by(category) %>%
+  ggplot(aes(x=value, y=symptom_name_formatted, fill=category)) +
+  geom_col() +
+  facet_wrap(~variable, nrow=1) +
+  theme_minimal() +
+  xlab('Loadings') +
+  ylab('Symptom') +
+  labs(
+  title = 'a',
+  fill = 'Category') +
+  scale_x_continuous(breaks = c(-0.4, 0, 0.4)) + 
+  colour_fill_all
+p2_bar
+```
+
+# Pillar 2 - Children
+
+```{r}
+levels_p2_children = unique(
+  p2_children_long$symptom_name_formatted[
+    order(
+      p2_children_long$category,
+      p2_children_long$symptom_name_formatted,
+      decreasing=TRUE
+      )
+    ]
+  )
+
+reordered_factor <- factor(
+  p2_children_long$symptom_name_formatted,
+  levels=levels_p2_children,
+  ordered = TRUE)
+
+p2_children_long$symptom_name_formatted <- factor(
+  p2_children_long$symptom_name_formatted,
+  levels=levels(reordered_factor)
+  )
+```
+
+
+```{r}
+p2_children_bar = p2_children_long %>%
+  filter(variable %in% c('PC1', 'PC2', 'PC3', 'PC4', 'PC5')) %>%
+  group_by(category) %>%
+  ggplot(aes(x=value, y=symptom_name_formatted, fill=category)) +
+  geom_col() +
+  facet_wrap(~variable, nrow=1) +
+  theme_minimal() +
+  xlab('Loadings') +
+  ylab('Symptom') +
+  labs(
+  title = 'a',
+  fill = 'Category') +
+  scale_x_continuous(breaks = c(-0.4, 0, 0.4)) + 
+  colour_fill_all
+p2_children_bar
+```
+
+# Pillar 2 - Adults
+
+```{r}
+levels_p2_adults = unique(
+  p2_adults_long$symptom_name_formatted[
+    order(
+      p2_adults_long$category,
+      p2_adults_long$symptom_name_formatted,
+      decreasing=TRUE
+      )
+    ]
+  )
+
+reordered_factor <- factor(
+  p2_adults_long$symptom_name_formatted,
+  levels=levels_p2_adults,
+  ordered = TRUE)
+
+p2_adults_long$symptom_name_formatted <- factor(
+  p2_adults_long$symptom_name_formatted,
+  levels=levels(reordered_factor)
+  )
+```
+
+
+```{r}
+p2_adults_bar = p2_adults_long %>%
+  filter(variable %in% c('PC1', 'PC2', 'PC3', 'PC4', 'PC5')) %>%
+  group_by(category) %>%
+  ggplot(aes(x=value, y=symptom_name_formatted, fill=category)) +
+  geom_col() +
+  facet_wrap(~variable, nrow=1) +
+  theme_minimal() +
+  xlab('Loadings') +
+  ylab('Symptom') +
+  labs(
+  title = 'b',
+  fill = 'Category') +
+  scale_x_continuous(breaks = c(-0.4, 0, 0.4)) + 
+  colour_fill_all
+p2_adults_bar
+```
+# Pillar 2 - Elder
+
+```{r}
+levels_p2_elder = unique(
+  p2_elder_long$symptom_name_formatted[
+    order(
+      p2_elder_long$category,
+      p2_elder_long$symptom_name_formatted,
+      decreasing=TRUE
+      )
+    ]
+  )
+
+reordered_factor <- factor(
+  p2_elder_long$symptom_name_formatted,
+  levels=levels_p2_elder,
+  ordered = TRUE)
+
+p2_elder_long$symptom_name_formatted <- factor(
+  p2_elder_long$symptom_name_formatted,
+  levels=levels(reordered_factor)
+  )
+```
+
+
+```{r}
+p2_elder_bar = p2_elder_long %>%
+  filter(variable %in% c('PC1', 'PC2', 'PC3', 'PC4', 'PC5')) %>%
+  group_by(category) %>%
+  ggplot(aes(x=value, y=symptom_name_formatted, fill=category)) +
+  geom_col() +
+  facet_wrap(~variable, nrow=1) +
+  theme_minimal() +
+  xlab('Loadings') +
+  ylab('Symptom') +
+  labs(
+  title = 'c',
+  fill = 'Category') +
+  scale_x_continuous(breaks = c(-0.4, 0, 0.4)) + 
+  colour_fill_all
+p2_elder_bar
+```
+
+## SGSS - all
+
+```{r}
+levels_CTAS_sgss = unique(
+  CTAS_sgss_long$symptom_name_formatted[
+    order(
+      CTAS_sgss_long$category,
+      CTAS_sgss_long$symptom_name_formatted,
+      decreasing=TRUE
+      )
+    ]
+  )
+
+reordered_factor <- factor(
+  CTAS_sgss_long$symptom_name_formatted,
+  levels=levels_CTAS_sgss,
+  ordered = TRUE)
+
+CTAS_sgss_long$symptom_name_formatted <- factor(
+  CTAS_sgss_long$symptom_name_formatted,
+  levels=levels(reordered_factor)
+  )
+```
+
+
+```{r}
+CTAS_sgss_bar = CTAS_sgss_long %>%
+  filter(variable %in% c('PC1', 'PC2', 'PC3', 'PC4', 'PC5')) %>%
+  group_by(category) %>%
+  ggplot(aes(x=value, y=symptom_name_formatted, fill=category)) + 
+  geom_col() + 
+  facet_wrap(~variable, nrow=1) +
+  theme_minimal() +
+  xlab('Loadings') + 
+  ylab('Symptom') +
+  labs(
+    title = 'b',
+    fill = 'Category') +
+  scale_x_continuous(breaks = c(-0.4, 0, 0.4)) + 
+  colour_fill_all
+CTAS_sgss_bar
+```
+
+## SGSS - children
+
+```{r}
+levels_sgss_children = unique(
+  CTAS_sgss_long$symptom_name_formatted[
+    order(
+      CTAS_sgss_long$category,
+      CTAS_sgss_long$symptom_name_formatted,
+      decreasing=TRUE
+      )
+    ]
+  )
+
+reordered_factor <- factor(
+  sgss_children_long$symptom_name_formatted,
+  levels=levels_sgss_children,
+  ordered = TRUE)
+
+sgss_children_long$symptom_name_formatted <- factor(
+  sgss_children_long$symptom_name_formatted,
+  levels=levels(reordered_factor)
+  )
+```
+
+
+```{r}
+sgss_children_bar = sgss_children_long %>%
+  filter(variable %in% c('PC1', 'PC2', 'PC3', 'PC4', 'PC5')) %>%
+  group_by(category) %>%
+  ggplot(aes(x=value, y=symptom_name_formatted, fill=category)) + 
+  geom_col() + 
+  facet_wrap(~variable, nrow=1) +
+  theme_minimal() +
+  xlab('Loadings') + 
+  ylab('Symptom') +
+  labs(
+  title = 'a',
+  fill = 'Category') +
+  scale_x_continuous(breaks = c(-0.4, 0, 0.4)) + 
+  colour_fill_all
+sgss_children_bar
+```
+
+## SGSS - adults
+
+```{r}
+levels_sgss_adults = unique(
+  sgss_adults_long$symptom_name_formatted[
+    order(
+      sgss_adults_long$category,
+      sgss_adults_long$symptom_name_formatted,
+      decreasing=TRUE
+      )
+    ]
+  )
+
+reordered_factor <- factor(
+  sgss_adults_long$symptom_name_formatted,
+  levels=levels_sgss_adults,
+  ordered = TRUE)
+
+sgss_adults_long$symptom_name_formatted <- factor(
+  sgss_adults_long$symptom_name_formatted,
+  levels=levels(reordered_factor)
+  )
+```
+
+
+```{r}
+sgss_adults_bar = sgss_adults_long %>%
+  filter(variable %in% c('PC1', 'PC2', 'PC3', 'PC4', 'PC5')) %>%
+  group_by(category) %>%
+  ggplot(aes(x=value, y=symptom_name_formatted, fill=category)) +
+  geom_col() +
+  facet_wrap(~variable, nrow=1) +
+  theme_minimal() +
+  xlab('Loadings') +
+  ylab('Symptom') +
+  labs(
+    'SGSS',
+    title = 'b',
+    fill = 'Category') +
+  scale_x_continuous(breaks = c(-0.4, 0, 0.4)) + 
+  colour_fill_all
+sgss_adults_bar
+```
+
+## SGSS - elder
+
+```{r}
+levels_sgss_elder = unique(
+  CTAS_sgss_long$symptom_name_formatted[
+    order(
+      sgss_elder_long$category,
+      sgss_elder_long$symptom_name_formatted,
+      decreasing=TRUE
+      )
+    ]
+  )
+
+reordered_factor <- factor(
+  sgss_elder_long$symptom_name_formatted,
+  levels=levels_sgss_elder,
+  ordered = TRUE)
+
+sgss_elder_long$symptom_name_formatted <- factor(
+  sgss_elder_long$symptom_name_formatted,
+  levels=levels(reordered_factor)
+  )
+```
+
+
+```{r}
+sgss_elder_bar = sgss_elder_long %>%
+  filter(variable %in% c('PC1', 'PC2', 'PC3', 'PC4', 'PC5')) %>%
+  group_by(category) %>%
+  ggplot(aes(x=value, y=symptom_name_formatted, fill=category)) +
+  geom_col() +
+  facet_wrap(~variable, nrow=1) +
+  theme_minimal() +
+  xlab('Loadings') +
+  ylab('Symptom') +
+  labs(
+    title = 'c',
+    fill = 'Category') +
+  scale_x_continuous(breaks = c(-0.4, 0, 0.4)) +
+  colour_fill_all
+sgss_elder_bar
+```
+
+## CSS
+
+```{r}
+levels_CSS = unique(
+  CSS_long$symptom_name_formatted[
+    order(
+      CSS_long$category,
+      CSS_long$symptom_name_formatted,
+      decreasing=TRUE
+      )
+    ]
+  )
+
+reordered_factor <- factor(
+  CSS_long$symptom_name_formatted,
+  levels=levels_CSS,
+  ordered = TRUE)
+
+CSS_long$symptom_name_formatted <- factor(
+  CSS_long$symptom_name_formatted,
+  levels=levels(reordered_factor)
+  )
+
+```
+
+
+```{r}
+CSS_bar = CSS_long %>%
+  filter(variable %in% c('PC1', 'PC2', 'PC3', 'PC4', 'PC5')) %>%
+  group_by(category) %>%
+  ggplot(aes(x=value, y=symptom_name_formatted, fill=category)) +
+  geom_col() +
+  facet_wrap(~variable, nrow=1) +
+  theme_minimal() +
+  xlab('Loadings') +
+  ylab('Symptom') +
+  labs(
+  title = 'c',
+  fill = 'Category') +
+  scale_x_continuous(breaks = c(-0.4, 0, 0.4)) + 
+  colour_fill_all
+CSS_bar
+```
+
+## Zoe children
+
+```{r}
+levels_zoe_children = unique(
+  Zoe_long_children$symptom_name_formatted[
+    order(
+      Zoe_long_children$category,
+      Zoe_long_children$symptom_name_formatted,
+      decreasing=TRUE
+      )
+    ]
+  )
+
+reordered_factor <- factor(
+  Zoe_long_children$symptom_name_formatted,
+  levels=levels_zoe_children,
+  ordered = TRUE)
+
+Zoe_long_children$symptom_name_formatted <- factor(
+  Zoe_long_children$symptom_name_formatted,
+  levels=levels(reordered_factor)
+  )
+
+```
+
+
+```{r}
+Zoe_bar_children = Zoe_long_children %>%
+  filter(variable %in% c('PC1', 'PC2', 'PC3', 'PC4', 'PC5')) %>%
+  group_by(category) %>%
+  ggplot(aes(x=value, y=symptom_name_formatted, fill=category)) + 
+  geom_col() + 
+  facet_wrap(~variable, nrow=1) +
+  theme_minimal() +
+  xlab('Loadings') + 
+  ylab('Symptom') +
+  labs(
+  title = 'a',
+  fill = 'Category') + 
+  scale_x_continuous(breaks = c(-0.4, 0, 0.4)) + 
+  colour_fill_all
+Zoe_bar_children
+```
+
+## Zoe adults
+
+```{r}
+levels_zoe_adults = unique(
+  Zoe_long_adults$symptom_name_formatted[
+    order(
+      Zoe_long_adults$category,
+      Zoe_long_adults$symptom_name_formatted,
+      decreasing=TRUE
+      )
+    ]
+  )
+
+reordered_factor_adults <- factor(
+  Zoe_long_adults$symptom_name_formatted,
+  levels=levels_zoe_adults,
+  ordered = TRUE)
+
+Zoe_long_adults$symptom_name_formatted <- factor(
+  Zoe_long_adults$symptom_name_formatted,
+  levels=levels(reordered_factor_adults)
+  )
+
+```
+
+
+```{r}
+Zoe_bar_adults = Zoe_long_adults %>%
+  filter(variable %in% c('PC1', 'PC2', 'PC3', 'PC4', 'PC5')) %>%
+  group_by(category) %>%
+  ggplot(aes(x=value, y=symptom_name_formatted, fill=category)) +
+  geom_col() +
+  facet_wrap(~variable, nrow=1) +
+  theme_minimal() +
+  xlab('Loadings') +
+  ylab('Symptom') +
+  labs(
+  title = 'b',
+  fill = 'Category') +
+  scale_x_continuous(breaks = c(-0.4, 0, 0.4)) +
+  colour_fill_all
+Zoe_bar_adults
+```
+
+## Zoe elder
+
+```{r}
+levels_zoe_elder = unique(
+  Zoe_long_elder$symptom_name_formatted[
+    order(
+      Zoe_long_elder$category,
+      Zoe_long_elder$symptom_name_formatted,
+      decreasing=TRUE
+      )
+    ]
+  )
+
+reordered_factor_elder <- factor(
+  Zoe_long_elder$symptom_name_formatted,
+  levels=levels_zoe_elder,
+  ordered = TRUE)
+
+Zoe_long_elder$symptom_name_formatted <- factor(
+  Zoe_long_elder$symptom_name_formatted,
+  levels=levels(reordered_factor_elder)
+  )
+
+```
+
+
+```{r}
+Zoe_bar_elder = Zoe_long_elder %>%
+  filter(variable %in% c('PC1', 'PC2', 'PC3', 'PC4', 'PC5')) %>%
+  group_by(category) %>%
+  ggplot(aes(x=value, y=symptom_name_formatted, fill=category)) +
+  geom_col() +
+  facet_wrap(~variable, nrow=1) +
+  theme_minimal() +
+  xlab('Loadings') +
+  ylab('Symptom') +
+  labs(
+  title = 'c',
+  fill = 'Category') +
+  scale_x_continuous(breaks = c(-0.4, 0, 0.4)) +
+  colour_fill_all
+Zoe_bar_elder
+```
+
+## ONS
+
+```{r}
+levels_ons = unique(
+  ONS_long$symptom_name_formatted[
+    order(
+      ONS_long$category,
+      ONS_long$symptom_name_formatted,
+      decreasing=TRUE
+      )
+    ]
+  )
+
+reordered_factor <- factor(
+  ONS_long$symptom_name_formatted,
+  levels=levels_ons,
+  ordered = TRUE)
+
+ONS_long$symptom_name_formatted <- factor(
+  ONS_long$symptom_name_formatted,
+  levels=levels(reordered_factor)
+  )
+
+```
+
+```{r}
+ONS_bar = ONS_long %>%
+  mutate(category = factor(category)) %>%
+  filter(variable %in% c('PC1', 'PC2', 'PC3', 'PC4')) %>%
+  group_by(category) %>%
+  ggplot(aes(x=value, y=symptom_name_formatted, fill=category)) + 
+  geom_col() + 
+  facet_wrap(~variable, nrow=1) +
+  theme_minimal() +
+  xlab('Loadings') + 
+  ylab('Symptom') +
+  labs(
+    title = 'd',
+    fill = 'Category'
+    ) +
+  scale_x_continuous(breaks = c(-0.4, 0, 0.4)) + 
+  colour_fill_all
+ONS_bar
+```
+
+## ONS - children
+
+```{r}
+levels_ons_children = unique(
+  ONS_children_long$symptom_name_formatted[
+    order(
+      ONS_children_long$category,
+      ONS_children_long$symptom_name_formatted,
+      decreasing=TRUE
+      )
+    ]
+  )
+
+reordered_factor <- factor(
+  ONS_long$symptom_name_formatted,
+  levels=levels_ons,
+  ordered = TRUE)
+
+ONS_children_long$symptom_name_formatted <- factor(
+  ONS_children_long$symptom_name_formatted,
+  levels=levels(reordered_factor)
+  )
+
+```
+
+```{r}
+ONS_children_bar = ONS_children_long %>%
+  mutate(category = factor(category)) %>%
+  filter(variable %in% c('PC1', 'PC2', 'PC3', 'PC4')) %>%
+  group_by(category) %>%
+  ggplot(aes(x=value, y=symptom_name_formatted, fill=category)) + 
+  geom_col() + 
+  facet_wrap(~variable, nrow=1) +
+  theme_minimal() +
+  xlab('Loadings') + 
+  ylab('Symptom') +
+  labs(
+    title = 'a',
+    fill = 'Category'
+    ) +
+  scale_x_continuous(breaks = c(-0.4, 0, 0.4)) + 
+  colour_fill_all
+ONS_children_bar
+```
+
+## ONS - adults
+
+```{r}
+levels_ons_adults = unique(
+  ONS_adults_long$symptom_name_formatted[
+    order(
+      ONS_adults_long$category,
+      ONS_adults_long$symptom_name_formatted,
+      decreasing=TRUE
+      )
+    ]
+  )
+
+reordered_factor <- factor(
+  ONS_adults_long$symptom_name_formatted,
+  levels=levels_ons_adults,
+  ordered = TRUE)
+
+ONS_adults_long$symptom_name_formatted <- factor(
+  ONS_adults_long$symptom_name_formatted,
+  levels=levels(reordered_factor)
+  )
+
+```
+
+```{r}
+ONS_adults_bar = ONS_adults_long %>%
+  mutate(category = factor(category)) %>%
+  filter(variable %in% c('PC1', 'PC2', 'PC3', 'PC4')) %>%
+  group_by(category) %>%
+  ggplot(aes(x=value, y=symptom_name_formatted, fill=category)) + 
+  geom_col() + 
+  facet_wrap(~variable, nrow=1) +
+  theme_minimal() +
+  xlab('Loadings') + 
+  ylab('Symptom') +
+  labs(
+    title = 'b',
+    fill = 'Category'
+    ) +
+  scale_x_continuous(breaks = c(-0.4, 0, 0.4)) + 
+  colour_fill_all
+ONS_adults_bar
+```
+
+## ONS - elder
+
+```{r}
+levels_ons_elder = unique(
+  ONS_elder_long$symptom_name_formatted[
+    order(
+      ONS_elder_long$category,
+      ONS_elder_long$symptom_name_formatted,
+      decreasing=TRUE
+      )
+    ]
+  )
+
+reordered_factor <- factor(
+  ONS_elder_long$symptom_name_formatted,
+  levels=levels_ons_elder,
+  ordered = TRUE)
+
+ONS_elder_long$symptom_name_formatted <- factor(
+  ONS_elder_long$symptom_name_formatted,
+  levels=levels(reordered_factor)
+  )
+
+```
+
+```{r}
+ONS_elder_bar = ONS_elder_long %>%
+  mutate(category = factor(category)) %>%
+  filter(variable %in% c('PC1', 'PC2', 'PC3', 'PC4')) %>%
+  group_by(category) %>%
+  ggplot(aes(x=value, y=symptom_name_formatted, fill=category)) + 
+  geom_col() + 
+  facet_wrap(~variable, nrow=1) +
+  theme_minimal() +
+  xlab('Loadings') + 
+  ylab('Symptom') +
+  labs(
+    title = 'c',
+    fill = 'Category'
+    ) +
+  scale_x_continuous(breaks = c(-0.4, 0, 0.4)) + 
+  colour_fill_all
+ONS_elder_bar
+```
+
+
+# Experimental all in one plot
+
+It looks better when you save it to png...
+
+```{r}
+arranged = ggarrange(
+  p2_bar,
+  CTAS_sgss_bar, 
+  CSS_bar, 
+  ONS_bar, 
+  common.legend = TRUE, 
+  legend = 'bottom',
+  nrow = 2,
+  ncol = 2) +
+  colour_fill_all
+
+ggsave('Figures/LPCA/arranged_entire_pops.png', width = 12, height = 16)
+```
+
+```{r}
+arranged_zoe_age_stratified = ggarrange(
+  Zoe_bar_children,
+   Zoe_bar_adults,
+   Zoe_bar_elder,
+  common.legend = TRUE, 
+  legend = 'bottom',
+  nrow = 3,
+  ncol = 1) +
+  colour_fill_all
+
+ggsave('Figures/LPCA/arranged_zoe_age_stratified.png', width = 6, height = 16)
+```
+
+```{r}
+arranged_ons_age_stratified = ggarrange(
+  ONS_children_bar,
+  ONS_adults_bar,
+  ONS_elder_bar,
+  common.legend = TRUE, 
+  legend = 'bottom',
+  nrow = 3,
+  ncol = 1) +
+  colour_fill_all
+
+ggsave('Figures/LPCA/arranged_ons_age_stratified.png', width = 6, height = 16)
+```
+
+```{r}
+arranged_p2_age_stratified = ggarrange(
+  p2_children_bar,
+  p2_adults_bar,
+  p2_elder_bar,
+  common.legend = TRUE, 
+  legend = 'bottom',
+  nrow = 3,
+  ncol = 1) +
+  colour_fill_all
+
+ggsave('Figures/LPCA/arranged_p2_age_stratified.png', width = 6, height = 16)
+```
+
+
+```{r}
+arranged_sgss_age_stratified = ggarrange(
+  sgss_children_bar,
+  sgss_adults_bar,
+  sgss_elder_bar,
+  common.legend = TRUE, 
+  legend = 'bottom',
+  nrow = 3,
+  ncol = 1) +
+  colour_fill_all
+
+ggsave('Figures/LPCA/arranged_sgss_age_stratified.png', width = 6, height = 16)
+```
+
+

@@ -1,0 +1,13 @@
+,sympt_now_fever,sympt_now_muscle_ache_myalgia,sympt_now_fatigue_weakness,sympt_now_sore_throat,sympt_now_cough,sympt_now_shortness_of_breath,sympt_now_headache,sympt_now_nausea_vomiting,sympt_now_abdominal_pain,sympt_now_diarrhoea,sympt_now_loss_of_taste,sympt_now_loss_of_smell
+sympt_now_fever,3131,1972,2301,1436,2192,1074,2217,865,608,621,1287,1160
+sympt_now_muscle_ache_myalgia,1972,3866,3209,1819,2634,1465,2889,1111,801,806,1756,1567
+sympt_now_fatigue_weakness,2301,3209,5247,2225,3396,1847,3592,1352,891,970,2232,2054
+sympt_now_sore_throat,1436,1819,2225,3211,2182,1091,2212,758,544,562,1279,1212
+sympt_now_cough,2192,2634,3396,2182,5374,1657,3109,1101,751,849,1937,1782
+sympt_now_shortness_of_breath,1074,1465,1847,1091,1657,2192,1553,712,498,522,1111,1015
+sympt_now_headache,2217,2889,3592,2212,3109,1553,4969,1258,856,867,2006,1873
+sympt_now_nausea_vomiting,865,1111,1352,758,1101,712,1258,1569,516,529,819,737
+sympt_now_abdominal_pain,608,801,891,544,751,498,856,516,1060,433,524,484
+sympt_now_diarrhoea,621,806,970,562,849,522,867,529,433,1183,584,529
+sympt_now_loss_of_taste,1287,1756,2232,1279,1937,1111,2006,819,524,584,3197,2489
+sympt_now_loss_of_smell,1160,1567,2054,1212,1782,1015,1873,737,484,529,2489,3056

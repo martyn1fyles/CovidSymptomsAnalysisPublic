@@ -1,0 +1,13 @@
+,0,1,symptom_name_raw,symptom_name_formatted,category
+0,-3.4344347,-3.965665,sympt_now_fever,Fever,Systemic
+1,-2.264471,-4.1518927,sympt_now_muscle_ache_myalgia,Muscle ache,Systemic
+2,-2.6760697,-3.6685634,sympt_now_fatigue_weakness,Fatigue,Systemic
+3,-3.2297912,-4.9576206,sympt_now_sore_throat,Sore throat,Upper respiratory tract
+4,-2.6566558,-4.899937,sympt_now_cough,Cough,Lower respiratory tract
+5,-1.7550527,-3.630077,sympt_now_shortness_of_breath,Shortness of breath,Lower respiratory tract
+6,-2.981409,-4.3220296,sympt_now_headache,Headache,Systemic
+7,-2.0174344,0.20344862,sympt_now_nausea_vomiting,Nausea/vomiting,Gastrointestinal
+8,-2.123732,0.7266946,sympt_now_abdominal_pain,Abdominal pain,Gastrointestinal
+9,-2.5881238,0.73376054,sympt_now_diarrhoea,Diarrhoea,Gastrointestinal
+10,-2.7467003,-2.7583468,sympt_now_loss_of_taste,Loss of taste,Upper respiratory tract
+11,-3.2250812,-2.804088,sympt_now_loss_of_smell,Loss of smell,Upper respiratory tract

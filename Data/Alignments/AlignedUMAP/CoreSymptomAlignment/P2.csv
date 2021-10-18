@@ -1,0 +1,19 @@
+,0,1,symptom_name_raw,symptom_name_formatted,category
+0,-3.6297388,-4.2276163,cough,Cough,Lower respiratory tract
+1,-3.1939104,-3.9575045,fever,Fever,Systemic
+2,-1.3760171,0.593928,altered_consciousness,Altered conciousness,Altered state
+3,-2.439257,-1.4502226,diarrhoea,Diarrhoea,Gastrointestinal
+4,-3.6575642,-3.2777457,fatigue,Fatigue,Systemic
+5,-4.3657923,-4.4699726,headache,Headache,Systemic
+6,-4.3318205,-3.2536385,joint_pain,Joint Pain,Systemic
+7,-3.1134837,-2.2948468,loss_of_appetite,Loss of appetite,Gastrointestinal
+8,-4.378264,-3.8417907,muscle_ache,Muscle ache,Systemic
+9,-3.007609,-1.6169676,nausea,Nausea,Gastrointestinal
+10,-1.4760679,1.1185055,nose_bleed,Nose bleed,Other
+11,-0.97468024,0.87365836,rash,Rash,Other
+12,-3.7332313,-5.0745964,runny_nose,Rhinitis,Upper respiratory tract
+13,-0.8926053,1.4264024,seizures,Seizures,Altered state
+14,-3.9409325,-5.525403,sneezing,Sneezing,Upper respiratory tract
+15,-4.2386546,-4.987438,sore_throat,Sore throat,Upper respiratory tract
+16,-1.6960845,-0.034684982,vomiting,Vomiting,Gastrointestinal
+17,-2.9571257,-2.8708017,loss_of_smell_or_taste,Loss of smell or taste,Upper respiratory tract

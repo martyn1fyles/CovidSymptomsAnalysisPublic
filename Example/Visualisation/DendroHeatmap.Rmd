@@ -1,0 +1,272 @@
+---
+title: "Hierarchal Clustering"
+output: html_notebook
+---
+
+```{r}
+# creates some nice colours for use in plotting.
+source('Example/Visualisation/my_functions.R')
+```
+
+# Libraries
+
+```{r}
+library(reshape2)
+library(ggdendro)
+library(ggplot2)
+library(cowplot)
+library(dplyr)
+library(RColorBrewer)
+library(scico)
+library(ggpubr)
+```
+
+# Load distance matrices
+
+Distance matrices
+```{r}
+# entire population
+jaccard = read.csv('Example/Outputs/DistanceMatrixJaccard.csv')
+```
+
+Convert to long data format for use in heatmaps
+
+```{r}
+jaccard_long = melt(jaccard)
+```
+
+## Dendrogram grobs
+
+```{r}
+category_legend = guides(colour = guide_legend(override.aes = list(size=5), nrow = 3))
+
+y_scale = scale_y_continuous(
+    name="Jaccard distance",
+    breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0),
+    limits=c(-0.5, 1))
+
+remove_axis_arrange_legend = theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.line = element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        legend.position = "bottom",
+        legend.box = "vertical",
+        legend.justification = ("right")
+  )
+
+size_scaling =  scale_size_continuous(
+    breaks = c(20, 40, 60, 80, 100),
+    labels = c(20, 40, 60, 80, 100),
+    limits = c(0, 100),
+    range = c(2,6)
+   )
+
+shifted_y_scale = scale_y_continuous(
+    name="Jaccard distance",
+    breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0),
+    limits=c(-0.5, 1))
+```
+
+Heatmap grobs
+
+```{r}
+heatmap_theme = theme(axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = 'top',
+        axis.text.x = element_text(
+          angle = 90,
+          hjust = 1,
+          vjust = 0.5,
+          size = 12))
+
+
+z_axis_scale = scico::scale_fill_scico(
+    palette = "roma",
+    limits = c(0, 1))
+```
+
+
+# Data cleaning
+
+We wrangle the raw distance matrices into a form that can be used as an input to as.dist. Really ought to convert this into a function...
+
+```{r}
+symptom_names = jaccard[,1]
+jaccard = jaccard[,-1]
+rownames(jaccard) = symptom_names
+jaccard_dist = as.dist(jaccard)
+```
+
+# Extract symptom_names from datasets
+
+We join the the lookup table that provides fromatted names for symptoms and assigns categories.
+
+```{r}
+# entire population
+symptom_names_df = data.frame(symptom_names)
+colnames(symptom_names_df) <- 'Symptom'
+```
+
+Perform joins and do formatting
+
+```{r}
+symptom_proportions = read.csv('Example/Outputs/symptom_proportions.csv')
+colnames(symptom_proportions) = c('Symptom', 'Proportion')
+```
+
+
+```{r}
+symptom_names_df = symptom_names_df %>%
+  inner_join(categories) %>%
+  inner_join(symptom_proportions) %>%
+  mutate(
+    cases_with_symptom_prop = round(Proportion*100)) %>%
+  mutate(symptom_name_formatted_with_perc = paste(
+    Symptom,
+    " (",
+    cases_with_symptom_prop,
+    "%)",
+    sep = ""
+  ))
+```
+
+```{r}
+symptom_names_df
+```
+
+
+# DendroHeatmaps
+
+```{r}
+text_size = 0.01
+```
+
+
+## CTAS Pillar 2
+
+The code here is a bit tricky. To begin, we create a dendrogram using the h_clust function. We then extract the dendrogram as line segments using a combination of as.dendrogram and dendro_data. We do this since it allows much more low level graphical tweaking, and plotting other points on top.
+
+```{r}
+jaccard_dendro_dd_row = as.dendrogram(
+  hclust(
+    jaccard_dist,
+    method = 'complete'
+    )
+  )
+jaccard_dendro_data = dendro_data(jaccard_dendro_dd_row)
+```
+
+The dendro_data table contains the names that were on the Jaccard distance matrix. We join to the symptom information table so that we can encode more information onto the dendrogram.
+
+```{r}
+jaccard_dendro_data$labels = jaccard_dendro_data$labels %>% 
+  left_join(
+    symptom_names_df,
+    by = c('label' = 'Symptom')
+    )
+```
+
+We now recreate the dendrogram in ggplot2, but we can make use of the additional data that has been added to the dendro_data table.
+
+```{r}
+remove_axis_arrange_legend = theme(
+  axis.title.x=element_blank(),
+        axis.line = element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        legend.position = "bottom",
+        legend.box = "vertical",
+        legend.justification = ("right"))
+```
+
+
+```{r}
+dendrogram <- ggplot(segment(jaccard_dendro_data)) +
+  geom_segment(
+    aes(x=x, y=y, xend=xend, yend=yend)) + 
+  geom_text(
+    data=label(jaccard_dendro_data),
+    aes(
+      label=symptom_name_formatted_with_perc,
+      x=x,
+      y=-0.05,
+      angle='0',
+      hjust = 1,
+      label_size = text_size)) +
+  geom_point(
+    data = jaccard_dendro_data$labels,
+    aes(
+      x=x,
+      y=0,
+      size=cases_with_symptom_prop,
+      color=Category)) +
+  labs(
+    title = 'Synthetic dataset',
+    subtitle = 'Complete linkage',
+    size = 'Cases with symptom (%)',
+    color = 'Category') + 
+  theme_cowplot(font_size = 12) + 
+  remove_axis_arrange_legend + 
+  shifted_y_scale +
+  colour_scale_all + 
+  size_scaling + 
+  coord_flip() +
+  category_legend
+dendrogram
+```
+
+### Heatmap
+
+```{r}
+# get the ordering from the dendrogram
+jaccard_order = order.dendrogram(jaccard_dendro_dd_row)
+
+# Order the levels according to their position in the dendrogram
+jaccard_long$X = factor(
+  x = jaccard_long$X,
+  levels = jaccard_long$X[jaccard_order],
+  ordered = TRUE
+)
+
+jaccard_long$variable = factor(
+  x = jaccard_long$variable,
+  levels = jaccard_long$X[rev(jaccard_order)],
+  ordered = TRUE
+)
+```
+
+```{r}
+heatmap <- ggplot(
+  data = jaccard_long,
+  aes(
+    x = variable,
+    y = X
+    )
+  ) +
+  geom_tile(aes(fill = value)) +
+  theme_minimal() +
+  z_axis_scale + 
+  heatmap_theme +
+  xlab("Symptom") +
+  labs(fill = "Jaccard distance") 
+
+heatmap
+```
+
+### Arranging
+
+```{r}
+# you will have to manually align the symptoms with the heatmap
+DendroHeatmap = ggdraw() +
+  draw_plot(heatmap, x = 0, y = 0.15, width = .45, height = 0.86) +
+  draw_plot(dendrogram, x = 0.35, y = 0, width = 0.56, height = 0.98)
+
+ggsave(
+  'Example/Figures/DendroHeatmap.png',
+  plot = DendroHeatmap, width = 12)
+```

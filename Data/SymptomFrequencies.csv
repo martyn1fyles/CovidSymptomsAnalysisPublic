@@ -1,0 +1,111 @@
+"","dataset","symptom_name_formatted","prop_with_symptom","category","name"
+"1","CTAS","Altered conciousness",0.0304426529260393,"Altered state","NHS Test & Trace
+Pillar 2"
+"2","CTAS","Cough",0.448040098536904,"Lower respiratory tract","NHS Test & Trace
+Pillar 2"
+"3","CTAS","Diarrhoea",0.122135698870244,"Gastrointestinal","NHS Test & Trace
+Pillar 2"
+"4","CTAS","Fatigue",0.384296367749006,"Systemic","NHS Test & Trace
+Pillar 2"
+"5","CTAS","Fever",0.294796286855946,"Systemic","NHS Test & Trace
+Pillar 2"
+"6","CTAS","Headache",0.558353200465211,"Systemic","NHS Test & Trace
+Pillar 2"
+"7","CTAS","Joint Pain",0.332392328285403,"Systemic","NHS Test & Trace
+Pillar 2"
+"8","CTAS","Loss of appetite",0.260511060981157,"Gastrointestinal","NHS Test & Trace
+Pillar 2"
+"9","CTAS","Loss of smell or taste",0.360411852512111,"Upper respiratory tract","NHS Test & Trace
+Pillar 2"
+"10","CTAS","Muscle ache",0.447121885998785,"Systemic","NHS Test & Trace
+Pillar 2"
+"11","CTAS","Nausea",0.190402725332959,"Gastrointestinal","NHS Test & Trace
+Pillar 2"
+"12","CTAS","Nose bleed",0.0205993412557655,"Other","NHS Test & Trace
+Pillar 2"
+"13","CTAS","Rash",0.0202647797724616,"Other","NHS Test & Trace
+Pillar 2"
+"14","CTAS","Rhinitis",0.271759775086769,"Upper respiratory tract","NHS Test & Trace
+Pillar 2"
+"15","CTAS","Seizures",0.00259101995463884,"Altered state","NHS Test & Trace
+Pillar 2"
+"16","CTAS","Sneezing",0.244349543488414,"Upper respiratory tract","NHS Test & Trace
+Pillar 2"
+"17","CTAS","Sore throat",0.3476759271413,"Upper respiratory tract","NHS Test & Trace
+Pillar 2"
+"18","CTAS","Vomiting",0.0398836360972304,"Gastrointestinal","NHS Test & Trace
+Pillar 2"
+"19","CTAS","Altered conciousness",0.0530174894841709,"Altered state","NHS Test & Trace
+SGSS"
+"20","CTAS","Cough",0.444649103387204,"Lower respiratory tract","NHS Test & Trace
+SGSS"
+"21","CTAS","Diarrhoea",0.147894620323223,"Gastrointestinal","NHS Test & Trace
+SGSS"
+"22","CTAS","Fatigue",0.435067522692052,"Systemic","NHS Test & Trace
+SGSS"
+"23","CTAS","Fever",0.344848350675227,"Systemic","NHS Test & Trace
+SGSS"
+"24","CTAS","Headache",0.475156077042285,"Systemic","NHS Test & Trace
+SGSS"
+"25","CTAS","Joint Pain",0.303475758246624,"Systemic","NHS Test & Trace
+SGSS"
+"26","CTAS","Loss of appetite",0.295435023245517,"Gastrointestinal","NHS Test & Trace
+SGSS"
+"27","CTAS","Loss of smell or taste",0.303422625636484,"Upper respiratory tract","NHS Test & Trace
+SGSS"
+"28","CTAS","Muscle ache",0.400274518485721,"Systemic","NHS Test & Trace
+SGSS"
+"29","CTAS","Nausea",0.200991808722603,"Gastrointestinal","NHS Test & Trace
+SGSS"
+"30","CTAS","Nose bleed",0.0241576267434138,"Other","NHS Test & Trace
+SGSS"
+"31","CTAS","Rash",0.0219172016825327,"Other","NHS Test & Trace
+SGSS"
+"32","CTAS","Rhinitis",0.261350453841045,"Upper respiratory tract","NHS Test & Trace
+SGSS"
+"33","CTAS","Seizures",0.00643790126189949,"Altered state","NHS Test & Trace
+SGSS"
+"34","CTAS","Sneezing",0.225114013725924,"Upper respiratory tract","NHS Test & Trace
+SGSS"
+"35","CTAS","Sore throat",0.296028337392074,"Upper respiratory tract","NHS Test & Trace
+SGSS"
+"36","CTAS","Vomiting",0.0693646225370821,"Gastrointestinal","NHS Test & Trace
+SGSS"
+"37","ONS","Fever",0.3416,"Systemic","ONS Community
+Infection Survey"
+"38","ONS","Muscle ache",0.4218,"Systemic","ONS Community
+Infection Survey"
+"39","ONS","Fatigue",0.5724,"Systemic","ONS Community
+Infection Survey"
+"40","ONS","Sore throat",0.3503,"Upper respiratory tract","ONS Community
+Infection Survey"
+"41","ONS","Cough",0.5863,"Lower respiratory tract","ONS Community
+Infection Survey"
+"42","ONS","Shortness of breath",0.2391,"Lower respiratory tract","ONS Community
+Infection Survey"
+"43","ONS","Headache",0.5421,"Systemic","ONS Community
+Infection Survey"
+"44","ONS","Nausea/vomiting",0.1712,"Gastrointestinal","ONS Community
+Infection Survey"
+"45","ONS","Abdominal pain",0.1156,"Gastrointestinal","ONS Community
+Infection Survey"
+"46","ONS","Diarrhoea",0.1291,"Gastrointestinal","ONS Community
+Infection Survey"
+"47","ONS","Loss of taste",0.3488,"Upper respiratory tract","ONS Community
+Infection Survey"
+"48","ONS","Loss of smell",0.3334,"Upper respiratory tract","ONS Community
+Infection Survey"
+"49","Zoe","Fatigue",0.181166123,"Systemic","Covid Symptom Study"
+"50","Zoe","Abdominal pain",0.195219317,"Gastrointestinal","Covid Symptom Study"
+"51","Zoe","Chest pain",0.263408143,"Lower respiratory tract","Covid Symptom Study"
+"52","Zoe","Sore throat",0.419794557,"Upper respiratory tract","Covid Symptom Study"
+"53","Zoe","Shortness of breath",0.049786606,"Lower respiratory tract","Covid Symptom Study"
+"54","Zoe","Loss of appetite",0.308326437,"Gastrointestinal","Covid Symptom Study"
+"55","Zoe","Altered/loss of smell",0.519659867,"Upper respiratory tract","Covid Symptom Study"
+"56","Zoe","Muscle ache",0.369910585,"Systemic","Covid Symptom Study"
+"57","Zoe","Headache",0.641286533,"Systemic","Covid Symptom Study"
+"58","Zoe","Hoarse voice",0.258961751,"Upper respiratory tract","Covid Symptom Study"
+"59","Zoe","Delirium",0.143339338,"Altered state","Covid Symptom Study"
+"60","Zoe","Diarrhoea",0.223114746,"Gastrointestinal","Covid Symptom Study"
+"61","Zoe","Fever",0.32755627,"Systemic","Covid Symptom Study"
+"62","Zoe","Cough",0.393002613,"Lower respiratory tract","Covid Symptom Study"

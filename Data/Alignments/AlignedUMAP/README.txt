@@ -1,0 +1,1 @@
+CoreSymptomAlignment is the embedding produced when we align the embeddings of different datasets based upon a set of shared symptoms.

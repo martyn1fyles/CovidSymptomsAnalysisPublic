@@ -1,0 +1,226 @@
+---
+title: "Age Histograms"
+output: html_notebook
+---
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(stringr)
+library(splitstackshape)
+library(cowplot)
+library(ggpubr)
+```
+
+
+This notebook is used to produce age histogram plots.
+
+```{r}
+pillar_2 = read.csv("Data/TTI_Pillar2/AgeDistributionBinnedOriginP2.csv")
+sgss = read.csv("Data/TTI_SGSS/AgeDistributionBinnedOriginSGSS.csv")
+CSS = read.csv('Data/CovidSymptomStudy/Age.csv')
+CIS = read.csv("Data/CommunityInfectionSurvey/AgeDistributionBinned.csv")
+```
+
+## CSS reports decades only, compute bin
+
+```{r}
+CSS = CSS %>%
+  mutate(binRange_1 = Decade*10) %>%
+  mutate(binRange_2 = (Decade+1)*10)
+```
+
+## CIS reports most of the data for a single year, convert to same format as other datasets
+
+```{r}
+CIS = CIS %>% 
+  mutate(decade = floor(subset.age_85 / 10)) %>%
+  group_by(decade) %>%
+  summarise(count = sum(unity))%>%
+  mutate(binRange_1 = decade*10) %>%
+  mutate(binRange_2 = (decade+1)*10)
+```
+
+Manually edit the right interval of the largest bin, since it contains many values.
+
+```{r}
+CIS[9,]$binRange_2 = 95
+```
+
+
+## Normlising to ge the density
+
+```{r}
+pillar_2 = pillar_2 %>%
+  mutate(density = count / sum(count))
+
+sgss = sgss %>%
+  mutate(density = count / sum(count))
+
+CSS = CSS %>%
+  mutate(density = Count / sum(Count))
+
+CIS = CIS %>%
+  mutate(density = count / sum(count))
+```
+
+Use regex to split the bins into lower and upper values for the Test & Trace datasets
+
+```{r}
+pillar_2$binRange <- str_extract(pillar_2$age_band, "[0-9].*[0-9]+")
+pillar_2 <- cSplit(pillar_2, "binRange")
+
+sgss$binRange <- str_extract(sgss$age_band, "[0-9].*[0-9]+")
+sgss <- cSplit(sgss, "binRange")
+```
+
+```{r}
+pillar_2 = pillar_2 %>%
+  mutate(binRange_1 = binRange_1 + 1) %>%
+  mutate(binRange_2 = binRange_2 + 1)
+
+pillar_2[1]$binRange_1 = 0
+pillar_2[10]$binRange_2 = 120
+```
+
+```{r}
+sgss = sgss %>%
+  mutate(binRange_2 = binRange_2 + 1) %>%
+  mutate(binRange_1 = binRange_1 + 1)
+
+sgss[1]$binRange_1 = 0
+sgss[10]$binRange_2 = 120
+```
+
+
+Compute the bin widths
+
+```{r}
+pillar_2 = pillar_2 %>%
+  mutate(width = binRange_2 - binRange_1)
+
+sgss = sgss %>%
+  mutate(width = binRange_2 - binRange_1)
+
+CSS = CSS %>%
+  mutate(width = binRange_2 - binRange_1)
+
+CIS = CIS %>%
+  mutate(width = binRange_2 - binRange_1)
+```
+
+# create some custom ggplot settings
+
+```{r}
+x_scale = scale_x_continuous(
+  "Age (years)", 
+  seq(from = 0, to = 120, by = 20),
+  limits = c(0, 120))
+
+age_histogram = geom_bar(
+  stat = "identity"
+  #, alpha = 0.6
+  , position = "identity"
+  ,show.legend = FALSE)
+
+y_scale = scale_y_continuous(
+  "Density",
+  seq(from = 0, to = 0.3, by = 0.05), limits = c(0, 0.3))
+```
+
+
+```{r}
+pillar_2_hist = ggplot(pillar_2,
+       aes(
+         x = binRange_1 + width/2,
+         fill = binRange_1 + width/2,
+         y = density,
+         width = width
+      )) +
+  age_histogram + 
+  x_scale + 
+  y_scale + 
+  theme_minimal_grid() +
+  ggtitle("a") +
+  scale_fill_continuous()
+
+
+pillar_2_hist
+```
+
+```{r}
+sgss_hist = ggplot(sgss,
+       aes(
+         x = binRange_1 + width/2,
+         y = density,
+         fill = binRange_1 + width/2,
+         width = width
+      )) +
+  age_histogram +
+  theme_minimal_grid() +
+  x_scale + 
+  y_scale + 
+  ggtitle("b")
+
+sgss_hist
+```
+
+```{r}
+CSS_hist = ggplot(CSS,
+       aes(
+         x = binRange_1 + width/2,
+         y = density,
+         fill = binRange_1 + width/2,
+         width = width
+      )) +
+  age_histogram +
+  theme_minimal_grid() +
+  x_scale +
+  y_scale +
+  ggtitle("c")
+
+CSS_hist
+```
+
+```{r}
+CIS_hist = ggplot(CIS,
+       aes(
+         x = binRange_1 + width/2,
+         y = density,
+         fill = binRange_1 + width/2,
+         width = width
+      )) +
+  age_histogram +
+  theme_minimal_grid() +
+  x_scale +
+  y_scale +
+  ggtitle("d")
+
+CIS_hist
+```
+
+## Arranging the plots
+
+```{r}
+arranged = ggarrange(
+  pillar_2_hist,
+  sgss_hist,
+  CSS_hist,
+  CIS_hist,
+  ncol = 4,
+  nrow = 1,
+  show.legend = FALSE)
+arranged
+```
+
+```{r}
+arranged$`1`
+```
+
+
+```{r}
+ggsave('Figures/DescriptiveStatistics/Age Distributions.png', arranged$`1`, width = 14, height = 4)
+```
+
+
+

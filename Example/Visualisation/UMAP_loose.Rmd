@@ -1,0 +1,115 @@
+---
+title: "UMAP Visualisation"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r}
+source('Example/Visualisation/my_functions.R')
+```
+
+# Libraries
+
+```{r}
+library(ggplot2)
+library(ggrepel)
+library(dplyr)
+library(cowplot)
+library(RColorBrewer)
+library(gridExtra)
+library(ggpubr)
+#library(lemon)
+```
+
+# Load and clean data
+
+## Pillar 2 - all
+
+```{r}
+umap <- read.csv("Example/Outputs/SymptomsUMAP_loose_clustering.csv")
+# transpose and drop the index column
+umap = data.frame(t(umap[-1]))
+umap$Symptom = rownames(umap)
+umap = umap %>%
+  select(Symptom,
+         X1,
+         X2)
+```
+
+# Joining to symptom_info tables and symptom name formatting lookups
+
+Import the SymptomNameCategoryLookup which maps symptom names to formatted version and establishes uniform naming conventions.
+```{r}
+categories = read.csv('Example/Inputs/symptom_categories.csv')
+```
+
+## p2 - all
+
+Join the umap outputs to the category lookup table and the symptom proportions table.
+
+```{r}
+symptom_props = read.csv('Example/Outputs/symptom_proportions.csv')
+# establish the naming convention
+#colnames(p2)[1] = 'symptom_name_raw'
+colnames(symptom_props) = c('Symptom', 'proportion')
+umap = umap %>%
+  inner_join(categories) %>%
+  inner_join(symptom_props)
+```
+
+Creating a ggplot object with setting that can be altered globally
+
+```{r}
+scaling_factor = 100
+bubble_plot = geom_point(aes(size = scaling_factor * proportion))
+```
+
+
+```{r}
+symptom_labels = labs(
+    size = 'Proportion of cases\nwith symptom (%)',
+    color = 'Symptom category'
+    )
+```
+
+```{r}
+category_legend = guides(colour = guide_legend(override.aes = list(size=5)))
+```
+
+
+# Plot Data
+
+## Pillar 2 - all
+
+```{r}
+umap_plot = ggplot(
+  umap,
+  aes(
+    x=X1,
+    y=X2,
+    label=Symptom,
+    color = Category)) +
+  bubble_plot +
+  labs(
+    title = "Synthetic Dataset") +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X1, y=X2, label = Symptom),
+    size = 2.5,
+    point.padding = 0.5) +
+  theme_cowplot() +
+  symptom_labels +
+  colour_scale_all +
+  scale_size_continuous() +
+  category_legend
+umap_plot
+```
+
+```{r}
+ggsave('Example/Figures/UMAP_loose.png')
+```
+
+
+

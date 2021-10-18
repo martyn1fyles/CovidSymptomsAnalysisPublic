@@ -37,3 +37,5 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+CovidSymptomsAnalysisPublic.Rproj
+.vscode/settings.json

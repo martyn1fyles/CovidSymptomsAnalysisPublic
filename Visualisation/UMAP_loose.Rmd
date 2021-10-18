@@ -1,0 +1,1213 @@
+---
+title: "UMAP Visualisation"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r}
+source('Visualisation/my_functions.R')
+```
+
+# Libraries
+
+```{r}
+library(ggplot2)
+library(ggrepel)
+library(dplyr)
+library(cowplot)
+library(RColorBrewer)
+library(gridExtra)
+library(ggpubr)
+```
+
+# Load and clean data
+
+## Pillar 2 - all
+
+```{r}
+p2 <- read.csv("Data/TTI_Pillar2/SymptomsUMAP_loose_clusteringOrigin P2.csv")
+# transpose and drop the index column
+p2 = data.frame(t(p2[-1]))
+p2$Symptom = rownames(p2)
+p2 = p2 %>%
+  select(Symptom,
+         X1,
+         X2)
+
+# theta = -pi/4
+# p2 = p2 %>%
+#   mutate(
+#     X1_dash = X1*cos(theta) - X2*sin(theta),
+#     X2_dash = X1*sin(theta) + X2*cos(theta)) %>%
+#   mutate(
+#     X1 = X1_dash, 
+#     X2 = X2_dash) %>%
+#   select(
+#     Symptom,
+#     X1,
+#     X2)
+```
+
+## Pillar 2 - children
+
+```{r}
+p2_children <- read.csv("Data/TTI_Pillar2_AgeStratified/SymptomsUMAP_loose_clusteringOriginP2below18.csv")
+# transpose and drop the index column
+p2_children = data.frame(t(p2_children[-1]))
+p2_children$Symptom = rownames(p2_children)
+p2_children = p2_children %>%
+  select(Symptom,
+         X1,
+         X2)
+```
+
+## Pillar 2 - adults
+
+```{r}
+p2_adults <- read.csv("Data/TTI_Pillar2_AgeStratified/SymptomsUMAP_loose_clusteringOriginP218-54.csv")
+# transpose and drop the index column
+p2_adults = data.frame(t(p2_adults[-1]))
+p2_adults$Symptom = rownames(p2_adults)
+p2_adults = p2_adults %>%
+  select(Symptom,
+         X1,
+         X2)
+```
+
+## Pillar 2 - elders
+
+```{r}
+p2_elder <- read.csv("Data/TTI_Pillar2_AgeStratified/SymptomsUMAP_loose_clusteringOriginP255Plus.csv")
+# transpose and drop the index column
+p2_elder = data.frame(t(p2_elder[-1]))
+p2_elder$Symptom = rownames(p2_elder)
+p2_elder = p2_elder %>%
+  select(Symptom,
+         X1,
+         X2)
+```
+
+## SGSS - all
+
+```{r}
+sgss <- read.csv("Data/TTI_SGSS/SymptomsUMAP_loose_clusteringOrigin SGSS.csv")
+# transpose and drop the index column
+sgss = data.frame(t(sgss[-1]))
+sgss$Symptom = rownames(sgss)
+sgss = sgss %>%
+  select(Symptom,
+         X1,
+         X2)
+```
+
+## SGSS - children
+
+```{r}
+sgss_children <- read.csv("Data/TTI_SGSS_AgeStratified/SymptomsUMAP_loose_clusteringOriginSGSSBelow18.csv")
+# transpose and drop the index column
+sgss_children = data.frame(t(sgss_children[-1]))
+sgss_children$Symptom = rownames(sgss_children)
+sgss_children = sgss_children %>%
+  select(Symptom,
+         X1,
+         X2)
+```
+
+## SGSS - adults
+
+```{r}
+sgss_adults <- read.csv("Data/TTI_SGSS_AgeStratified/SymptomsUMAP_loose_clusteringOriginSGSS18-54.csv")
+# transpose and drop the index column
+sgss_adults = data.frame(t(sgss_adults[-1]))
+sgss_adults$Symptom = rownames(sgss_adults)
+sgss_adults = sgss_adults %>%
+  select(Symptom,
+         X1,
+         X2)
+```
+
+## SGSS - elders
+
+```{r}
+sgss_elders <- read.csv("Data/TTI_SGSS_AgeStratified/SymptomsUMAP_loose_clusteringOriginSGSS55Plus.csv")
+# transpose and drop the index column
+sgss_elders = data.frame(t(sgss_elders[-1]))
+sgss_elders$Symptom = rownames(sgss_elders)
+sgss_elders = sgss_elders %>%
+  select(Symptom,
+         X1,
+         X2)
+```
+
+## Zoe all
+
+```{r}
+zoe = read.csv('Data/CovidSymptomStudy/UMAPLooseWide.csv')
+zoe = data.frame(t(zoe[-1]))
+zoe$Symptom = rownames(zoe)
+zoe = zoe %>%
+  select(
+    Symptom,
+    X1,
+    X2
+  )
+```
+
+## Zoe children
+
+```{r}
+zoe_children = read.csv('Data/CovidSymptomStudyAgeSeperated/UMAPLoose_children.csv')
+zoe_children = data.frame(t(zoe_children[-1]))
+zoe_children$Symptom = rownames(zoe_children)
+zoe_children = zoe_children %>%
+  select(
+    Symptom,
+    X1,
+    X2
+  )
+```
+
+## Zoe adults
+
+```{r}
+zoe_adults = read.csv('Data/CovidSymptomStudyAgeSeperated/UMAPLoose_adults.csv')
+zoe_adults = data.frame(t(zoe_adults[-1]))
+zoe_adults$Symptom = rownames(zoe_adults)
+zoe_adults = zoe_adults %>%
+  select(
+    Symptom,
+    X1,
+    X2
+  )
+```
+
+## Zoe elder
+
+```{r}
+zoe_elder = read.csv('Data/CovidSymptomStudyAgeSeperated/UMAPLoose_elder.csv')
+zoe_elder = data.frame(t(zoe_elder[-1]))
+zoe_elder$Symptom = rownames(zoe_elder)
+zoe_elder = zoe_elder %>%
+  select(
+    Symptom,
+    X1,
+    X2
+  )
+```
+
+## ONS
+
+```{r}
+ONS = read.csv('Data/CommunityInfectionSurvey/SymptomsUMAP_loose_clustering.csv')
+ONS = data.frame(t(ONS))[-1,]
+ONS$symptom_name_raw = rownames(ONS)
+ONS = ONS %>%
+  select(
+    symptom_name_raw,
+    X1,
+    X2
+  )
+rownames(ONS) = NULL
+```
+
+## ONS children
+
+```{r}
+ONS_children = read.csv('Data/CommunityInfectionSurveyAgeStratified/SymptomsUMAP_loose_clustering_18.csv')
+ONS_children = data.frame(t(ONS_children))[-1,]
+ONS_children$symptom_name_raw = rownames(ONS_children)
+ONS_children = ONS_children %>%
+  select(
+    symptom_name_raw,
+    X1,
+    X2
+  )
+rownames(ONS_children) = NULL
+```
+
+## ONS adults
+
+```{r}
+ONS_adults = read.csv('Data/CommunityInfectionSurveyAgeStratified/SymptomsUMAP_loose_clustering_18_54.csv')
+ONS_adults = data.frame(t(ONS_adults))[-1,]
+ONS_adults$symptom_name_raw = rownames(ONS_adults)
+ONS_adults = ONS_adults %>%
+  select(
+    symptom_name_raw,
+    X1,
+    X2
+  )
+rownames(ONS_adults) = NULL
+```
+
+## ONS elders
+
+```{r}
+ONS_elders = read.csv('Data/CommunityInfectionSurveyAgeStratified/SymptomsUMAP_loose_clustering_55.csv')
+ONS_elders = data.frame(t(ONS_elders))[-1,]
+ONS_elders$symptom_name_raw = rownames(ONS_elders)
+ONS_elders = ONS_elders %>%
+  select(
+    symptom_name_raw,
+    X1,
+    X2
+  )
+rownames(ONS_elders) = NULL
+```
+
+# Joining to symptom_info tables and symptom name formatting lookups
+
+Import the SymptomNameCategoryLookup which maps symptom names to formatted version and establishes uniform naming conventions.
+```{r}
+SymptomNameCategoryLookup = read.csv('Data/Lookups/SymptomNameCategoryLookup.csv')
+categories = read.csv('Data/Lookups/CategoriesLookup.csv')
+```
+
+## p2 - all
+
+```{r}
+p2_symptom_info = read.csv('Data/TTI_Pillar2/Symptom_infoOriginP2.csv')
+# establish the naming convention
+colnames(p2)[1] = 'symptom_name_raw'
+colnames(p2_symptom_info)[1] = 'symptom_name_raw'
+p2 = p2 %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'CTAS')) %>%
+  inner_join(p2_symptom_info)
+```
+
+## p2 - children
+
+```{r}
+p2_children_symptom_info = read.csv('Data/TTI_Pillar2_AgeStratified/Symptom_infoOriginP2Below18.csv')
+# establish the naming convention
+colnames(p2_children)[1] = 'symptom_name_raw'
+colnames(p2_children_symptom_info)[1] = 'symptom_name_raw'
+p2_children = p2_children %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'CTAS')) %>%
+  inner_join(p2_children_symptom_info)
+```
+
+## p2 - adults
+
+```{r}
+p2_adults_symptom_info = read.csv('Data/TTI_Pillar2_AgeStratified/Symptom_infoOriginP218-54.csv')
+# establish the naming convention
+colnames(p2_adults)[1] = 'symptom_name_raw'
+colnames(p2_adults_symptom_info)[1] = 'symptom_name_raw'
+p2_adults = p2_adults %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'CTAS')) %>%
+  inner_join(p2_adults_symptom_info)
+```
+
+## p2 - elder
+
+```{r}
+p2_elder_symptom_info = read.csv('Data/TTI_Pillar2_AgeStratified/Symptom_infoOriginP255Plus.csv')
+# establish the naming convention
+colnames(p2_elder)[1] = 'symptom_name_raw'
+colnames(p2_elder_symptom_info)[1] = 'symptom_name_raw'
+p2_elder = p2_elder %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'CTAS')) %>%
+  inner_join(p2_elder_symptom_info)
+```
+
+## sgss - all
+
+```{r}
+sgss_symptom_info = read.csv('Data/TTI_SGSS/Symptom_infoOriginSGSS.csv')
+# establish the naming convention
+colnames(sgss)[1] = 'symptom_name_raw'
+colnames(sgss_symptom_info)[1] = 'symptom_name_raw'
+sgss = sgss %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'CTAS')) %>%
+  inner_join(sgss_symptom_info) 
+```
+
+## sgss - children
+
+```{r}
+sgss_children_symptom_info = read.csv('Data/TTI_SGSS_AgeStratified/Symptom_infoOriginSGSSBelow18.csv')
+# establish the naming convention
+colnames(sgss_children)[1] = 'symptom_name_raw'
+colnames(sgss_children_symptom_info)[1] = 'symptom_name_raw'
+sgss_children = sgss_children %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'CTAS')) %>%
+  inner_join(sgss_children_symptom_info) 
+```
+
+## sgss - adults
+
+```{r}
+sgss_adults_symptom_info = read.csv('Data/TTI_SGSS_AgeStratified/Symptom_infoOriginSGSS18-54.csv')
+# establish the naming convention
+colnames(sgss_adults)[1] = 'symptom_name_raw'
+colnames(sgss_adults_symptom_info)[1] = 'symptom_name_raw'
+sgss_adults = sgss_adults %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'CTAS')) %>%
+  inner_join(sgss_adults_symptom_info) 
+```
+
+## sgss - elder
+
+```{r}
+sgss_elders_symptom_info = read.csv('Data/TTI_SGSS_AgeStratified/Symptom_infoOriginSGSS55Plus.csv')
+# establish the naming convention
+colnames(sgss_elders)[1] = 'symptom_name_raw'
+colnames(sgss_elders_symptom_info)[1] = 'symptom_name_raw'
+sgss_elders = sgss_elders %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'CTAS')) %>%
+  inner_join(sgss_elders_symptom_info) 
+```
+
+## Zoe - all
+
+```{r}
+zoe_symptom_info = read.csv('Data/CovidSymptomStudy/DemographicSymptom_wide.csv')
+# establish the naming convention
+colnames(zoe)[1] = 'symptom_name_raw'
+colnames(zoe_symptom_info)[2] = 'symptom_name_raw'
+zoe = zoe %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'Zoe')) %>%
+  inner_join(zoe_symptom_info) 
+```
+
+## Zoe - children
+
+```{r}
+zoe_symptom_info_children = read.csv('Data/CovidSymptomStudyAgeSeperated/DemographicSymptom_children.csv')
+# establish the naming convention
+colnames(zoe_children)[1] = 'symptom_name_raw'
+colnames(zoe_symptom_info_children)[2] = 'symptom_name_raw'
+zoe_children = zoe_children %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'Zoe')) %>%
+  inner_join(zoe_symptom_info_children) 
+```
+
+## Zoe - adults
+
+```{r}
+zoe_symptom_info_adults = read.csv('Data/CovidSymptomStudyAgeSeperated/DemographicSymptom_adults.csv')
+# establish the naming convention
+colnames(zoe_adults)[1] = 'symptom_name_raw'
+colnames(zoe_symptom_info_adults)[2] = 'symptom_name_raw'
+zoe_adults = zoe_adults %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'Zoe')) %>%
+  inner_join(zoe_symptom_info_adults)
+```
+
+## Zoe - elder
+
+```{r}
+zoe_symptom_info_elder = read.csv('Data/CovidSymptomStudyAgeSeperated/DemographicSymptom_elder.csv')
+# establish the naming convention
+colnames(zoe_elder)[1] = 'symptom_name_raw'
+colnames(zoe_symptom_info_elder)[2] = 'symptom_name_raw'
+zoe_elder = zoe_elder %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'Zoe')) %>%
+  inner_join(zoe_symptom_info_elder) 
+```
+
+## ONS
+
+```{r}
+ONS_symptom_info = read.csv('Data/CommunityInfectionSurvey/symptoms_info.csv')
+colnames(ONS_symptom_info)[2] = 'symptom_name_raw'
+ONS = ONS %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'ONS')) %>%
+  inner_join(ONS_symptom_info)
+```
+
+## ONS children
+
+```{r}
+ONS_children_symptom_info = read.csv('Data/CommunityInfectionSurveyAgeStratified/symptoms_info_18.csv')
+colnames(ONS_children_symptom_info)[2] = 'symptom_name_raw'
+ONS_children = ONS_children %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'ONS')) %>%
+  inner_join(ONS_children_symptom_info)
+```
+
+## ONS adults
+
+```{r}
+ONS_adults_symptom_info = read.csv('Data/CommunityInfectionSurveyAgeStratified/symptoms_info_18_54.csv')
+colnames(ONS_adults_symptom_info)[2] = 'symptom_name_raw'
+ONS_adults = ONS_adults %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'ONS')) %>%
+  inner_join(ONS_adults_symptom_info)
+```
+
+## ONS elder
+
+```{r}
+ONS_elder_symptom_info = read.csv('Data/CommunityInfectionSurveyAgeStratified/symptoms_info_55.csv')
+colnames(ONS_elder_symptom_info)[2] = 'symptom_name_raw'
+ONS_elders = ONS_elders %>%
+  inner_join(SymptomNameCategoryLookup %>% filter(dataset == 'ONS')) %>%
+  inner_join(ONS_elder_symptom_info)
+```
+
+Creating a ggplot object with setting that can be altered globally
+
+```{r}
+scaling_factor = 100
+bubble_plot = geom_point(aes(size = scaling_factor * proportion_of_cases_with_symptom))
+bubble_plot_zoe = geom_point(aes(size = scaling_factor * proportion))
+```
+
+
+```{r}
+symptom_labels = labs(
+    size = 'Proportion of cases\nwith symptom (%)',
+    color = 'Symptom category'
+    )
+```
+
+```{r}
+category_legend = guides(colour = guide_legend(override.aes = list(size=5)))
+```
+
+
+```{r}
+size_scaling =  scale_size_continuous(
+    breaks = c(0, 20, 40, 60, 80, 100),
+    labels = c(0, 20, 40, 60, 80, 100),
+    limits = c(0, 100),
+    range = c(2,6)
+   )
+```
+
+
+# Plot Data
+
+## Pillar 2 - all
+
+```{r}
+p2_plot = ggplot(
+  p2,
+  aes(
+    x=X1,
+    y=X2,
+    label=symptom_name_formatted,
+    color = category)) +
+  bubble_plot +
+  labs(
+    title = "a") +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X1, y=X2, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5) +
+  theme_cowplot() +
+  symptom_labels +
+  size_scaling + 
+  colour_scale_all +
+  coord_equal(ratio = 1, xlim = c(9.2 - 2, 9.2 + 2), ylim = c(5.7 - 2, 5.7 + 2)) +
+  category_legend +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids()
+  theme(legend.position="bottom")
+p2_plot
+```
+
+## Pillar 2 - Children
+
+```{r}
+p2_children_plot = ggplot(
+  p2_children,
+  aes(
+    x=X1,
+    y=X2,
+    label=symptom_name_formatted,
+    color = category)) + 
+  bubble_plot + 
+  labs(
+    title = "a") +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X1, y=X2, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5) +
+  theme_cowplot() +
+  symptom_labels + 
+  colour_scale_all +
+  size_scaling + 
+  coord_equal(ratio = 1, xlim = c(10 - 2.5, 10 + 2.5), ylim = c(6.3 - 2.5, 6.5 + 2.5)) + 
+  category_legend +
+  theme(legend.position="bottom") +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids()
+p2_children_plot
+```
+
+## Pillar 2 - Adults
+
+```{r}
+p2_adults_plot = ggplot(
+  p2_adults,
+  aes(
+    x=X1,
+    y=X2,
+    label=symptom_name_formatted,
+    color = category)) + 
+  bubble_plot + 
+  labs(
+    title = "b") +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X1, y=X2, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5) +
+  theme_cowplot() +
+  symptom_labels + 
+  colour_scale_all +
+  coord_equal(ratio = 1, xlim = c(4 - 2, 4 + 2), ylim = c(-0.75 - 2, -0.75 + 2)) + 
+  category_legend +
+  size_scaling +
+  theme(legend.position="bottom") + 
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids()
+p2_adults_plot
+```
+
+## Pillar 2 - Elders
+
+```{r}
+p2_elder_plot = ggplot(
+  p2_elder,
+  aes(
+    x=X1,
+    y=X2,
+    label=symptom_name_formatted,
+    color = category)) + 
+  bubble_plot + 
+  labs(
+    title = "c") +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X1, y=X2, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5) +
+  theme_cowplot() +
+  symptom_labels + 
+  colour_scale_all +
+  coord_equal(ratio = 1, xlim = c(11.2 - 2.2, 11.2 + 2.2), ylim = c(3.5 - 2.2, 3.5 + 2.2)) + 
+  category_legend +
+  size_scaling +
+  theme(legend.position="bottom") + 
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids()
+p2_elder_plot
+```
+
+## SGSS - All
+
+```{r}
+sgss_plot = ggplot(
+  sgss,
+  aes(
+    x=X1,
+    y=X2,
+    label=symptom_name_formatted,
+    color = category)) + 
+  bubble_plot + 
+  labs(
+    title = "b") +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X1, y=X2, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5) +
+  theme_cowplot() +
+  symptom_labels + 
+  colour_scale_all +
+  coord_equal(ratio = 1, xlim = c(0.75 - 2.5, 0.75 + 2.5), ylim = c(4.2 - 2.5, 4.2 + 2.5)) + 
+  category_legend + 
+  size_scaling + 
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids()
+sgss_plot
+```
+
+## SGSS - Children
+
+```{r}
+sgss_children_plot = ggplot(
+  sgss_children,
+  aes(
+    x=X1,
+    y=X2,
+    label=symptom_name_formatted,
+    color = category)) + 
+  bubble_plot + 
+  labs(
+    title = "a") +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X1, y=X2, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5) +
+  theme_cowplot() +
+  symptom_labels + 
+  colour_scale_all +
+  coord_equal(ratio = 1, xlim = c(6.2 - 2.5, 6.2 + 2.5), ylim = c(7.2 - 2.5, 7.2 + 2.5)) + 
+  category_legend + 
+  size_scaling +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids()
+sgss_children_plot
+```
+
+## SGSS - Adults
+
+```{r}
+sgss_adults_plot = ggplot(
+  sgss_adults,
+  aes(
+    x=X1,
+    y=X2,
+    label=symptom_name_formatted,
+    color = category)) + 
+  bubble_plot + 
+  labs(
+    title = "b") +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X1, y=X2, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5) +
+  theme_cowplot() +
+  symptom_labels + 
+  colour_scale_all +
+  coord_equal(ratio = 1, xlim = c(-1.4 - 3, -1.4 + 3), ylim = c(2.2 - 3, 2.2 + 3)) + 
+  category_legend + 
+  size_scaling + 
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids()
+sgss_adults_plot
+```
+
+## SGSS - Elders
+
+```{r}
+sgss_elders_plot = ggplot(
+  sgss_elders,
+  aes(
+    x=X1,
+    y=X2,
+    label=symptom_name_formatted,
+    color = category)) + 
+  bubble_plot + 
+  labs(
+    title = "c") +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X1, y=X2, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5) +
+  theme_cowplot() +
+  symptom_labels + 
+  colour_scale_all +
+  coord_equal(ratio = 1, xlim = c(12.5 - 2.2, 12.5 + 2.2), ylim = c(8.5 - 2.2, 8.5 + 2.2)) + 
+  category_legend + 
+  size_scaling + 
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids()
+sgss_elders_plot
+```
+
+## Zoe
+
+```{r}
+zoe_plot = ggplot(
+  zoe,
+  aes(
+    x=X1,
+    y=X2,
+    label=symptom_name_formatted,
+    color = category)) + 
+  bubble_plot_zoe + 
+  labs(title = "c") +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X1, y=X2, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5) +
+  theme_cowplot() +
+  symptom_labels + 
+  colour_scale_all + 
+  coord_equal(ratio = 1, xlim = c(6.7 - 2, 6.7 + 2), ylim = c(3 - 2, 3 + 2)) +
+  category_legend + 
+  size_scaling + 
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids()
+zoe_plot
+```
+
+## Zoe - Children
+
+```{r}
+zoe_plot_children = ggplot(
+  zoe_children,
+  aes(
+    x=X1,
+    y=X2,
+    label=symptom_name_formatted,
+    color = category)) + 
+  bubble_plot_zoe + 
+  labs(title = "a") +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X1, y=X2, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5
+    ) +
+  theme_cowplot() +
+  symptom_labels + 
+  colour_scale_all + 
+  coord_equal(ratio = 1, xlim = c(10.3 - 2.5, 10.3 + 2.5), ylim = c(-10.5- 2.5, -10.5 + 2.5)) +
+  category_legend + 
+  size_scaling + 
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids()
+zoe_plot_children
+```
+
+## Zoe - Adults
+
+```{r}
+zoe_plot_adults = ggplot(
+  zoe_adults,
+  aes(
+    x=X1,
+    y=X2,
+    label=symptom_name_formatted,
+    color = category)) + 
+  bubble_plot_zoe + 
+  labs(title = "b") +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X1, y=X2, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5
+    ) +
+  theme_cowplot() +
+  symptom_labels + 
+  colour_scale_all + 
+  coord_equal(ratio = 1, xlim = c(5.7 - 2, 5.7 + 2), ylim = c(9.5 - 2, 9.5 + 2)) +
+  category_legend +
+  size_scaling + 
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids()
+zoe_plot_adults
+```
+
+## Zoe - Elders
+
+```{r}
+zoe_plot_elder = ggplot(
+  zoe_elder,
+  aes(
+    x=X1,
+    y=X2,
+    label=symptom_name_formatted,
+    color = category)) + 
+  bubble_plot_zoe + 
+  labs(title = "c") +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X1, y=X2, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5) +
+  theme_cowplot() +
+  symptom_labels + 
+  colour_scale_all + 
+  coord_equal(ratio = 1, xlim = c(4.5 - 1.8, 4.5 + 1.8), ylim = c(5.9 - 1.8, 5.9 + 1.8)) +
+  category_legend + 
+  size_scaling + 
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids()
+zoe_plot_elder
+```
+
+## ONS
+
+```{r}
+ONS_plot = ggplot(
+  ONS,
+  aes(
+    x=X1,
+    y=X2,
+    label=symptom_name_formatted,
+    color = category)) +
+  geom_point(
+    aes(size = proportion_fromsymptomatics)
+    ) +
+  labs(title = "d") +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X1, y=X2, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5
+    ) +
+  theme_cowplot() +
+  labs(
+    size = 'Symptom frequency',
+    color = 'Symptom category') +
+  coord_equal(ratio = 1, xlim = c(10 - 2.5, 10 + 2.5), ylim = c(0.5 - 2.5, 0.5 + 2.5)) +
+  colour_scale_all +
+  category_legend + 
+  size_scaling +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids()
+ONS_plot
+```
+
+## ONS - Children
+
+```{r}
+ONS_children_plot = ggplot(
+  ONS_children,
+  aes(
+    x=X1,
+    y=X2,
+    label=symptom_name_formatted,
+    color = category)) +
+  geom_point(
+    aes(size = proportion_fromsymptomatics)
+    ) +
+  labs(title = 'a') +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X1, y=X2, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5
+    ) +
+  theme_cowplot() +
+  labs(
+    size = 'Symptom frequency',
+    color = 'Symptom category') +
+  coord_equal(ratio = 1, xlim = c(23 - 2.5, 23 + 2.5), ylim = c(1.8 - 2.5, 1.8 + 2.5)) +
+  colour_scale_all + 
+  category_legend +
+  size_scaling +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids()
+ONS_children_plot
+```
+
+## ONS - Adults
+
+```{r}
+ONS_adults_plot = ggplot(
+  ONS_adults,
+  aes(
+    x=X1,
+    y=X2,
+    label=symptom_name_formatted,
+    color = category)) +
+  geom_point(
+    aes(size = proportion_fromsymptomatics)
+    ) +
+  labs(title = 'b') +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X1, y=X2, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5
+    ) +
+  theme_cowplot() +
+  labs(
+    size = 'Symptom frequency',
+    color = 'Symptom category') +
+  coord_equal(ratio = 1, xlim = c(3 - 10, 3 + 10), ylim = c(1 - 10, 1 + 10)) +
+  colour_scale_all + 
+  category_legend + 
+  size_scaling +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids()
+ONS_adults_plot
+```
+
+## ONS - Elders
+
+```{r}
+ONS_elders_plot = ggplot(
+  ONS_elders,
+  aes(
+    x=X1,
+    y=X2,
+    label=symptom_name_formatted,
+    color = category)) +
+  geom_point(
+    aes(size = proportion_fromsymptomatics)
+    ) +
+  labs(title = 'c') +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X1, y=X2, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5
+    ) +
+  theme_cowplot() +
+  labs(
+    size = 'Symptom frequency',
+    color = 'Symptom category') +
+  coord_equal(ratio = 1, xlim = c(6 - 2, 6 + 2), ylim = c(1 - 2, 1 + 2)) +
+  colour_scale_all +
+  category_legend + 
+  size_scaling +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids()
+ONS_elders_plot
+```
+
+# Arranging
+
+## All main results
+
+```{r}
+blankPlot <- ggplot()+geom_blank(aes(1,1)) + 
+  cowplot::theme_nothing()
+
+legend = get_legend(
+  p2_plot + 
+    theme(legend.position = "right") + 
+    theme(legend.position = c(0, 0)))
+
+arranged = ggarrange(
+  p2_plot + theme(legend.position = "none"),
+  sgss_plot + theme(legend.position = "none"),
+  legend,
+  zoe_plot + theme(legend.position = "none"),
+  ONS_plot + theme(legend.position = "none"),
+  blankPlot,
+  ncol = 3,
+  nrow = 2) + 
+  colour_scale_all +
+  guides(colour = guide_legend(override.aes = list(size=10)))
+
+ggsave('Figures/UMAP/arranged_loose.png', arranged, height = 9, width = 9)
+```
+
+## Pillar 2 - age stratified
+
+```{r}
+legend = get_legend(p2_adults_plot + theme(legend.position = c(0.3, 0.5)))
+
+arranged_p2_age_stratified = ggarrange(
+  p2_children_plot + theme(legend.position = "none"),
+  p2_adults_plot + theme(legend.position = "none"),
+  p2_elder_plot + theme(legend.position = "none"),
+  legend,
+  nrow = 2,
+  ncol = 2) + 
+  colour_scale_all +
+  guides(colour = guide_legend(override.aes = list(size=10)))
+
+ggsave('Figures/UMAP/arranged_loose_p2_age_stratified.png', arranged_p2_age_stratified, height = 8, width = 8)
+```
+
+## SGSS - age stratified
+
+```{r}
+legend = get_legend(sgss_adults_plot + theme(legend.position = c(0.3, 0.5)))
+
+arranged_sgss_age_stratified = ggarrange(
+  sgss_children_plot + theme(legend.position = "none"),
+  sgss_adults_plot + theme(legend.position = "none"),
+  sgss_elders_plot + theme(legend.position = "none"),
+  legend,
+  nrow = 2,
+  ncol = 2) + 
+  colour_scale_all +
+  guides(colour = guide_legend(override.aes = list(size=10)))
+
+ggsave('Figures/UMAP/arranged_loose_sgss_age_stratified.png', arranged_sgss_age_stratified, height = 8, width = 8)
+```
+
+## ONS - age stratified
+
+```{r}
+legend = get_legend(sgss_adults_plot + theme(legend.position = c(0.3, 0.5)))
+
+arranged_ons_age_stratified = ggarrange(
+  ONS_children_plot + theme(legend.position = "none"),
+  ONS_adults_plot + theme(legend.position = "none"),
+  ONS_elders_plot + theme(legend.position = "none"),
+  legend,
+  nrow = 2,
+  ncol = 2) + 
+  colour_scale_all +
+  guides(colour = guide_legend(override.aes = list(size=10)))
+
+ggsave('Figures/UMAP/arranged_loose_ons_age_stratified.png', arranged_ons_age_stratified, height = 8, width = 8)
+```
+
+## Zoe age stratified
+
+```{r}
+legend = get_legend(zoe_plot_adults + theme(legend.position = c(0.3, 0.5)))
+
+arranged_zoe_age_stratified = ggarrange(
+  zoe_plot_children + theme(legend.position = "none"),
+  zoe_plot_adults + theme(legend.position = "none"),
+  zoe_plot_elder + theme(legend.position = "none"),
+  legend,
+  nrow = 2,
+  ncol = 2)
+
+ggsave('Figures/UMAP/arranged_loose_zoe_age_stratified.png', arranged_zoe_age_stratified, height = 8, width = 8)
+```
+
+# Saving single dataset outputs
+
+#```{r}
+# pillar 2 - all
+# ggsave(
+#   filename = '../Figures/UMAP/CTAS_pillar2_loose.png',
+#   plot = p2_plot
+#   )
+# 
+# # pillar 2 - children
+# ggsave(
+#   filename = '../Figures/UMAP/p2_children_loose.png',
+#   plot = p2_children_plot
+#   )
+# 
+# # pillar 2 - adults
+# ggsave(
+#   filename = '../Figures/UMAP/p2_adults_loose.png',
+#   plot = p2_adults_plot
+#   )
+# 
+# # pillar 2 - elders
+# ggsave(
+#   filename = '../Figures/UMAP/p2_elders_loose.png',
+#   plot = p2_elder_plot
+#   )
+# 
+# # sgss - all
+# ggsave(
+#   filename = '../Figures/UMAP/sgss_loose.png',
+#   plot = sgss_plot
+#   )
+# 
+# # sgss - children
+# ggsave(
+#   filename = '../Figures/UMAP/sgss_children_loose.png',
+#   plot = sgss_children_plot
+#   )
+# 
+# # sgss - adults
+# ggsave(
+#   filename = '../Figures/UMAP/sgss_adults_loose.png',
+#   plot = sgss_adults_plot
+#   )
+# 
+# # sgss - elders
+# ggsave(
+#   filename = '../Figures/UMAP/sgss_elder_loose.png',
+#   plot = sgss_elders_plot
+#   )
+# 
+# # zoe - all
+# ggsave(
+#   filename = '../Figures/UMAP/Zoe_loose.png',
+#   plot = zoe_plot
+#   )
+# 
+# # zoe - children
+# ggsave(
+#   filename = '../Figures/UMAP/Zoe_children_loose.png',
+#   plot = zoe_plot_children
+#   )
+# 
+# # zoe - adults
+# ggsave(
+#   filename = '../Figures/UMAP/Zoe_adults_loose.png',
+#   plot = zoe_plot_adults
+#   )
+# 
+# # zoe - elder
+# ggsave(
+#   filename = '../Figures/UMAP/Zoe_elders_loose.png',
+#   plot = zoe_plot_elder
+#   )
+# 
+# # ons - all
+# ggsave(
+#   filename = '../Figures/UMAP/ONS_loose.png',
+#   plot = ONS_plot
+#   )
+# 
+# # ons - children
+# ggsave(
+#   filename = '../Figures/UMAP/ONS_children_loose.png',
+#   plot = ONS_plot
+#   )
+# 
+# # ons - adults
+# ggsave(
+#   filename = '../Figures/UMAP/ONS_adults_loose.png',
+#   plot = ONS_adults_plot
+#   )
+# 
+# # ons - elders
+# ggsave(
+#   filename = '../Figures/UMAP/ONS_adults_loose.png',
+#   plot = ONS_elders_plot
+#   )
+#```
+
+

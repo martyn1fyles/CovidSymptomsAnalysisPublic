@@ -1,0 +1,370 @@
+---
+title: "AgeSliceHeirarchalClustering"
+author: "Martyn Fyles"
+date: "07/09/2021"
+output: html_document
+---
+
+
+```{r}
+source('Visualisation/my_functions.R')
+```
+
+# Libraries
+
+```{r}
+library(reshape2)
+library(ggdendro)
+library(ggplot2)
+library(cowplot)
+library(dplyr)
+library(RColorBrewer)
+library(scico)
+library(ggpubr)
+```
+
+# Load in lookups
+
+```{r}
+SymptomsNameCategoryLookup= read.csv(
+  'Data/Lookups/SymptomNameCategoryLookup.csv'
+  )
+categories = read.csv(
+  'Data/Lookups/CategoriesLookup.csv'
+  )
+
+text_size = 0.01
+
+remove_axis_arrange_legend = theme(
+  axis.title.x=element_blank(),
+        #axis.text.x=element_blank(),
+        #axis.ticks.x=element_blank(),
+        axis.line = element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        legend.position = "bottom",
+        legend.box = "vertical",
+        legend.justification = c(0.5,0))
+```
+
+## Dendrogram grobs
+
+```{r}
+category_legend = guides(colour = guide_legend(override.aes = list(size=5), nrow = 3))
+
+y_scale = scale_y_continuous(
+    name="Jaccard distance",
+    breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0),
+    limits=c(-0.5, 1))
+
+remove_axis_arrange_legend = theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.line = element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        legend.position = "bottom",
+        legend.box = "vertical",
+        legend.justification = ("right")
+  )
+
+size_scaling =  scale_size_continuous(
+    breaks = c(20, 40, 60, 80, 100),
+    labels = c(20, 40, 60, 80, 100),
+    limits = c(0, 100),
+    range = c(2,6)
+   )
+
+shifted_y_scale = scale_y_continuous(
+    name="Jaccard distance",
+    breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0),
+    limits=c(-0.5, 1))
+```
+
+Heatmap grobs
+
+```{r}
+heatmap_theme = theme(axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = 'top',
+        axis.text.x = element_text(
+          angle = 90,
+          hjust = 1,
+          vjust = 0.5,
+          size = 12))
+
+
+z_axis_scale = scico::scale_fill_scico(
+    palette = "roma",
+    limits = c(0, 1))
+```
+
+# Load distance matrices
+
+```{r}
+get_distance_matrix_p2 = function(number, title){
+  p2_slice = read.csv(paste0("Data/Slices/AgeSlices/P2/Jaccard_slice_", number, ".csv"))
+  
+  p2_slice_long = melt(p2_slice) %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('X' = 'symptom_name_raw')) %>%
+  filter(dataset == 'CTAS') %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('variable' = 'symptom_name_raw')) %>%
+  filter(dataset.x == 'CTAS') %>%
+  filter(dataset.y == 'CTAS') %>%
+  select(
+    symptom_name_formatted.x,
+    symptom_name_formatted.y,
+    value
+  )
+  
+  # pillar 2
+  p2_slice_symptom_names = p2_slice[,1]
+  p2_slice = p2_slice[-1]
+  rownames(p2_slice) <- p2_slice_symptom_names
+  p2_slice_dist = as.dist(p2_slice)
+  
+  p2_slice_symptom_names_df = data.frame(p2_slice_symptom_names)
+  colnames(p2_slice_symptom_names_df) <- 'symptom_name_raw'
+  
+  p2_slice_symptom_names_df = p2_slice_symptom_names_df %>%
+  inner_join(SymptomsNameCategoryLookup) %>%
+  filter(dataset == 'CTAS')
+  
+  p2_slice_dendro_dd_row = as.dendrogram(
+  hclust(
+    p2_slice_dist,
+    method = 'complete'
+    )
+  )
+  
+  p2_slice_dendro_data = dendro_data(p2_slice_dendro_dd_row)
+  
+  p2_slice_dendro_data$labels = p2_slice_dendro_data$labels %>% 
+  left_join(
+    p2_slice_symptom_names_df,
+    by = c('label' = 'symptom_name_raw')
+    )
+
+  
+  p2_slice_dendrogram <- ggplot(segment(p2_slice_dendro_data)) +
+  geom_segment(
+    aes(x=x, y=y, xend=xend, yend=yend)) + 
+  geom_text(
+    data=label(p2_slice_dendro_data),
+    aes(
+      label=symptom_name_formatted,
+      x=x,
+      y=-0.05,
+      angle='0',
+      hjust = 1,
+      label_size = text_size)) +
+  geom_point(
+    data = p2_slice_dendro_data$labels,
+    aes(
+      x=x,
+      y=0,
+      size=50,
+      color=category)) +
+  labs(
+    size = 'Cases with symptom (%)',
+    color = 'Category') + 
+  theme_cowplot(font_size = 12) + 
+  remove_axis_arrange_legend + 
+  shifted_y_scale +
+  colour_scale_all + 
+  size_scaling + 
+  coord_flip() +
+  category_legend
+    
+  # get the ordering from the dendrogram
+  p2_slice_order = order.dendrogram(p2_slice_dendro_dd_row)
+  
+  # Order the levels according to their position in the dendrogram
+  p2_slice_long$symptom_name_formatted.x = factor(
+    x = p2_slice_long$symptom_name_formatted.x,
+    levels = p2_slice_long$symptom_name_formatted.x[p2_slice_order],
+    ordered = TRUE
+  )
+  
+  p2_slice_long$symptom_name_formatted.y = factor(
+    x = p2_slice_long$symptom_name_formatted.y,
+    levels = p2_slice_long$symptom_name_formatted.x[rev(p2_slice_order)],
+    ordered = TRUE
+  )
+  
+  p2_slice_heatmap <- ggplot(
+    data = p2_slice_long,
+    aes(
+      x = symptom_name_formatted.y,
+      y = symptom_name_formatted.x
+      )
+    ) +
+    geom_tile(aes(fill = value)) +
+    theme_minimal() +
+    z_axis_scale + 
+    heatmap_theme +
+    xlab("Symptom") +
+    labs(
+       title = title,
+       fill = "Jaccard distance") 
+  
+  p2_slice_DendroHeatmap = ggdraw() +
+    draw_plot(p2_slice_heatmap, x = 0, y = 0, width = .45, height = 1) +
+    draw_plot(p2_slice_dendrogram, x = 0.36, y = 0.055, width = 0.56, height = 0.85)
+  
+  return(p2_slice_DendroHeatmap)
+}
+```
+
+```{r}
+slice_0_plot = get_distance_matrix_p2('0', 'Pillar 2 - age <10')
+slice_0_plot
+```
+
+```{r}
+slice_1_plot = get_distance_matrix_p2('1', 'Pillar 2 - age 10-20')
+slice_1_plot
+```
+
+
+```{r}
+slice_4_plot = get_distance_matrix_p2('4', 'Pillar 2 - age 40-50')
+slice_4_plot
+```
+
+
+```{r}
+slice_9_plot = get_distance_matrix_p2('9', 'Pillar 2 - age 90-100')
+slice_9_plot
+```
+
+```{r}
+ggsave(filename='slice_0_plot.png', plot = slice_0_plot, width = 15,
+       height = 8)
+ggsave(filename='slice_1_plot.png', plot = slice_1_plot, width = 15,
+       height = 8)
+ggsave(filename='slice_4_plot.png', plot = slice_4_plot, width = 15,
+       height = 8)
+ggsave(filename='slice_9_plot.png', plot = slice_9_plot, width = 15,
+       height = 8)
+```
+
+```{r}
+get_distance_matrix_sgss = function(number, title){
+  sgss_slice = read.csv(paste0("Data/Slices/AgeSlices/SGSS/Jaccard_slice_", number, ".csv"))
+  
+  sgss_slice_long = melt(sgss_slice) %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('X' = 'symptom_name_raw')) %>%
+  filter(dataset == 'CTAS') %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('variable' = 'symptom_name_raw')) %>%
+  filter(dataset.x == 'CTAS') %>%
+  filter(dataset.y == 'CTAS') %>%
+  select(
+    symptom_name_formatted.x,
+    symptom_name_formatted.y,
+    value
+  )
+  
+  # pillar 2
+  sgss_slice_symptom_names = sgss_slice[,1]
+  sgss_slice = sgss_slice[-1]
+  rownames(sgss_slice) <- sgss_slice_symptom_names
+  sgss_slice_dist = as.dist(sgss_slice)
+  
+  sgss_slice_symptom_names_df = data.frame(sgss_slice_symptom_names)
+  colnames(sgss_slice_symptom_names_df) <- 'symptom_name_raw'
+  
+  sgss_slice_symptom_names_df = sgss_slice_symptom_names_df %>%
+  inner_join(SymptomsNameCategoryLookup) %>%
+  filter(dataset == 'CTAS')
+  
+  sgss_slice_dendro_dd_row = as.dendrogram(
+  hclust(
+    sgss_slice_dist,
+    method = 'complete'
+    )
+  )
+  
+  sgss_slice_dendro_data = dendro_data(sgss_slice_dendro_dd_row)
+  
+  sgss_slice_dendro_data$labels = sgss_slice_dendro_data$labels %>% 
+  left_join(
+    sgss_slice_symptom_names_df,
+    by = c('label' = 'symptom_name_raw')
+    )
+
+  
+  sgss_slice_dendrogram <- ggplot(segment(sgss_slice_dendro_data)) +
+  geom_segment(
+    aes(x=x, y=y, xend=xend, yend=yend)) + 
+  geom_text(
+    data=label(sgss_slice_dendro_data),
+    aes(
+      label=symptom_name_formatted,
+      x=x,
+      y=-0.05,
+      angle='0',
+      hjust = 1,
+      label_size = text_size)) +
+  geom_point(
+    data = sgss_slice_dendro_data$labels,
+    aes(
+      x=x,
+      y=0,
+      size=50,
+      color=category)) +
+  labs(
+    size = 'Cases with symptom (%)',
+    color = 'Category') + 
+  theme_cowplot(font_size = 12) + 
+  remove_axis_arrange_legend + 
+  shifted_y_scale +
+  colour_scale_all + 
+  size_scaling + 
+  coord_flip() +
+  category_legend
+    
+  # get the ordering from the dendrogram
+  sgss_slice_order = order.dendrogram(sgss_slice_dendro_dd_row)
+  
+  # Order the levels according to their position in the dendrogram
+  sgss_slice_long$symptom_name_formatted.x = factor(
+    x = sgss_slice_long$symptom_name_formatted.x,
+    levels = sgss_slice_long$symptom_name_formatted.x[sgss_slice_order],
+    ordered = TRUE
+  )
+  
+  sgss_slice_long$symptom_name_formatted.y = factor(
+    x = sgss_slice_long$symptom_name_formatted.y,
+    levels = sgss_slice_long$symptom_name_formatted.x[rev(sgss_slice_order)],
+    ordered = TRUE
+  )
+  
+  sgss_slice_heatmap <- ggplot(
+    data = sgss_slice_long,
+    aes(
+      x = symptom_name_formatted.y,
+      y = symptom_name_formatted.x
+      )
+    ) +
+    geom_tile(aes(fill = value)) +
+    theme_minimal() +
+    z_axis_scale + 
+    heatmap_theme +
+    xlab("Symptom") +
+    labs(
+       title = title,
+       fill = "Jaccard distance") 
+  
+  sgss_slice_DendroHeatmap = ggdraw() +
+    draw_plot(sgss_slice_heatmap, x = 0, y = 0, width = .45, height = 1) +
+    draw_plot(sgss_slice_dendrogram, x = 0.36, y = 0.055, width = 0.56, height = 0.85)
+  
+  return(sgss_slice_DendroHeatmap)
+}
+```
+
+

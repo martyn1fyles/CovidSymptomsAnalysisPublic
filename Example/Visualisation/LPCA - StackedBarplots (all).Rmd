@@ -1,0 +1,108 @@
+---
+title: "LPCA Visualisation"
+output: html_notebook
+---
+
+```{r}
+source('Example/Visualisation/my_functions.R')
+```
+
+
+# Libraries
+
+```{r}
+library(ggplot2)
+library(ggrepel)
+library(reshape)
+library(dplyr)
+library(cowplot)
+library(RColorBrewer)
+library(ggpubr)
+```
+
+# Load data
+
+```{r}
+# entire populations
+lpca <- read.csv("Example/Outputs/LPCA_SymptomLoadings.csv")
+```
+
+
+# Aligning principal components
+Multiplying a principal component by -1 does not change the interpretation. We align some of the principal components for consistency of results.
+
+```{r}
+# ONS = ONS %>%
+#   mutate(V1 = V1 * -1)
+```
+
+
+```{r}
+categories = read.csv('Example/Inputs/symptom_categories.csv')
+```
+
+# Clean data
+
+```{r}
+# entire populations
+colnames(lpca) <- c('Symptom', 'PC1', 'PC2')
+```
+
+```{r}
+# entire populations
+lpca_long = melt(lpca) %>%
+inner_join(
+   categories)
+```
+
+# Plotting
+
+Arranging symptoms by category
+
+```{r}
+levels_lpca = unique(
+  lpca_long$Symptom[
+    order(
+      lpca_long$Category,
+      lpca_long$Symptom,
+      decreasing=TRUE
+      )
+    ]
+  )
+
+reordered_factor <- factor(
+  lpca_long$Symptom,
+  levels=levels_lpca,
+  ordered = TRUE)
+
+lpca_long$Symptom <- factor(
+  lpca_long$Symptom,
+  levels=levels(reordered_factor)
+  )
+```
+
+
+```{r}
+
+lpca_bar = lpca_long %>%
+  filter(variable %in% c('PC1', 'PC2')) %>%
+  mutate(Category = as.factor(Category)) %>%
+  group_by(Category) %>%
+  ggplot(aes(x=value, y=Symptom, fill=Category)) +
+  geom_col() +
+  facet_wrap(~variable, nrow=1) +
+  theme_minimal() +
+  xlab('Loadings') +
+  ylab('Symptom') +
+  labs(
+  title = 'Example dataset',
+  fill = 'Category')# +
+  #scale_x_continuous(breaks = c(-0.4, 0, 0.4)) #+ 
+  #colour_fill_all
+lpca_bar
+```
+
+```{r}
+ggsave('Example/Figures/LPCA_stacked_barplot.png')
+```
+

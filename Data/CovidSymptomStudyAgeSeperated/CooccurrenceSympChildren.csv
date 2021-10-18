@@ -1,0 +1,15 @@
+,fatigue,abdominal_pain,chest_pain,sore_throat,shortness_of_breath,skipped_meals,smell,unusual_muscle_pains,headache,hoarse_voice,delirium,diarrhoea,fever,persistent_cough
+fatigue,27,11,4,14,2,15,7,8,17,5,6,6,21,10
+abdominal_pain,11,271,37,122,4,93,51,60,173,39,15,58,131,49
+chest_pain,4,37,57,39,5,13,12,25,38,16,7,12,31,22
+sore_throat,14,122,39,362,7,90,51,60,205,78,15,52,172,117
+shortness_of_breath,2,4,5,7,9,4,1,4,5,6,3,2,7,4
+skipped_meals,15,93,13,90,4,235,36,36,141,31,13,41,151,52
+smell,7,51,12,51,1,36,113,29,68,16,5,16,44,26
+unusual_muscle_pains,8,60,25,60,4,36,29,104,79,16,11,20,59,29
+headache,17,173,38,205,5,141,68,79,488,69,20,49,255,98
+hoarse_voice,5,39,16,78,6,31,16,16,69,125,6,21,62,55
+delirium,6,15,7,15,3,13,5,11,20,6,29,3,19,10
+diarrhoea,6,58,12,52,2,41,16,20,49,21,3,118,51,31
+fever,21,131,31,172,7,151,44,59,255,62,19,51,454,105
+persistent_cough,10,49,22,117,4,52,26,29,98,55,10,31,105,265

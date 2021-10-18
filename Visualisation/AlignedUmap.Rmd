@@ -1,0 +1,294 @@
+---
+title: "UMAP Visualisation"
+output: html_notebook
+---
+
+```{r}
+source('Visualisation/my_functions.R')
+```
+
+# Libraries
+
+```{r}
+library(ggplot2)
+library(ggrepel)
+library(dplyr)
+library(cowplot)
+library(RColorBrewer)
+library(gridExtra)
+library(ggpubr)
+```
+
+# Load and clean data
+
+```{r}
+p2 = read.csv("Data/Alignments/AlignedUMAP/CoreSymptomAlignment/P2.csv")
+p2_symptom_info = read.csv('Data/TTI_Pillar2/Symptom_infoOriginP2.csv')
+colnames(p2_symptom_info)[1] = 'symptom_name_raw'
+p2 = p2 %>%
+  inner_join(p2_symptom_info)
+```
+
+```{r}
+sgss = read.csv("Data/Alignments/AlignedUMAP/CoreSymptomAlignment/SGSS.csv")
+sgss_symptom_info = read.csv('Data/TTI_SGSS/Symptom_infoOriginSGSS.csv')
+colnames(sgss_symptom_info)[1] = 'symptom_name_raw'
+sgss = sgss %>%
+  inner_join(sgss_symptom_info)
+```
+
+```{r}
+css = read.csv("Data/Alignments/AlignedUMAP/CoreSymptomAlignment/CSS.csv")
+css_symptom_info = read.csv('Data/CovidSymptomStudy/DemographicSymptom_wide.csv')
+colnames(css_symptom_info)[2] = 'symptom_name_raw'
+
+css = css %>%
+  inner_join(css_symptom_info)
+```
+
+```{r}
+cis = read.csv("Data/Alignments/AlignedUMAP/CoreSymptomAlignment/CIS.csv")
+cis_symptom_info = read.csv('Data/CommunityInfectionSurvey/symptoms_info.csv')
+colnames(cis_symptom_info)[2] = 'symptom_name_raw'
+cis_symptom_info = cis_symptom_info[-1]
+cis = cis %>%
+  inner_join(cis_symptom_info)
+```
+
+Creating a ggplot object with setting that can be altered globally
+
+```{r}
+scaling_factor = 100
+bubble_plot = geom_point(aes(size = scaling_factor * proportion_of_cases_with_symptom))
+bubble_plot_zoe = geom_point(aes(size = scaling_factor * proportion))
+
+symptom_labels = labs(
+    size = 'Proportion of cases\nwith symptom (%)',
+    color = 'Symptom category',
+    shape = 'Aligned symptom'
+    )
+
+category_legend = guides(colour = guide_legend(override.aes = list(size=5)))
+
+size_scaling =  scale_size_continuous(
+    breaks = c(0, 20, 40, 60, 80, 100),
+    labels = c(0, 20, 40, 60, 80, 100),
+    limits = c(0, 100),
+    range = c(2,6)
+   )
+```
+
+Create subsets of the data, containing only the symptoms that were aligned across all datasets.
+
+```{r}
+shared_symptoms = c('Cough', 'Diarrhoea', 'Fatigue', 'Fever', 'Headache',
+       'Muscle ache', 'Sore throat')
+
+p2 = p2 %>%
+  mutate(aligned = symptom_name_formatted %in% shared_symptoms)
+
+sgss = sgss %>%
+  mutate(aligned = symptom_name_formatted %in% shared_symptoms)
+
+cis = cis %>%
+  mutate(aligned = symptom_name_formatted %in% shared_symptoms)
+
+css = css %>%
+  mutate(aligned = symptom_name_formatted %in% shared_symptoms)
+```
+
+# Plot Data
+
+Create some axes that will work for all the different datasets
+
+```{r}
+x_max = max(c(p2$X0, sgss$X0, cis$X0, css$X0))
+x_min = min(c(p2$X0, sgss$X0, cis$X0, css$X0))
+y_max = max(c(p2$X1, sgss$X1, cis$X1, css$X1))
+y_min = min(c(p2$X1, sgss$X1, cis$X1, css$X1))
+
+x_center = (x_max + x_min) / 2
+y_center = (y_max + y_min) / 2
+
+x_len = x_max - x_min
+y_len = y_max - y_min
+
+len = max(x_len, y_len) * 1.2
+
+axes = coord_equal(
+  ratio = 1, 
+  xlim = c(x_center - len / 2, x_center + len / 2), 
+  ylim = c(y_center - len / 2, y_center + len / 2))
+```
+
+## Pillar 2 - all
+
+
+
+
+```{r}
+p2_plot = ggplot(
+  p2,
+  aes(
+    x=X0,
+    y=X1,
+    label=symptom_name_formatted,
+    color = category,
+    shape = factor(aligned))) +
+  bubble_plot +
+  labs(
+    title = "Pillar 2") +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X0, y=X1, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5,
+    max.overlaps = 20) +
+  theme_cowplot() + 
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids() + 
+  symptom_labels +
+  size_scaling + 
+  colour_scale_all +
+  axes + 
+  category_legend +
+  theme(legend.position="bottom")
+
+p2_plot
+```
+
+## SGSS - All
+
+```{r}
+sgss_plot = ggplot(
+  sgss,
+  aes(
+    x=X0,
+    y=X1,
+    label=symptom_name_formatted,
+    color = category,
+    shape = factor(aligned))) + 
+  bubble_plot + 
+  labs(
+    title = "SGSS") +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X0, y=X1, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5) +
+  theme_cowplot() +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids() + 
+  symptom_labels + 
+  colour_scale_all +
+  axes + 
+  category_legend + 
+  size_scaling
+sgss_plot
+```
+
+
+## Zoe
+
+```{r}
+css_plot = ggplot(
+  css,
+  aes(
+    x=X0,
+    y=X1,
+    label=symptom_name_formatted,
+    color = category,
+    shape = factor(aligned))) + 
+  bubble_plot_zoe + 
+  labs(title = "CSS") +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X0, y=X1, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5) +
+  theme_cowplot() +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids() + 
+  symptom_labels + 
+  colour_scale_all + 
+  axes + 
+  category_legend + 
+  size_scaling
+css_plot
+```
+
+## ONS
+
+```{r}
+cis_plot = ggplot(
+  cis,
+  aes(
+    x=X0,
+    y=X1,
+    label=symptom_name_formatted,
+    color = category,
+    shape = factor(aligned))) +
+  geom_point(
+    aes(size = proportion_fromsymptomatics)
+    ) +
+  labs(title = "CIS") +
+  geom_text_repel(
+    inherit.aes = FALSE,
+    aes(x=X0, y=X1, label = symptom_name_formatted),
+    size = 2.5,
+    point.padding = 0.5
+    ) +
+  theme_cowplot() +
+  labs(
+    size = 'Symptom frequency',
+    color = 'Symptom category') +
+  axes +  
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title = element_blank()) +
+  grids() + 
+  colour_scale_all +
+  category_legend + 
+  size_scaling
+cis_plot
+```
+
+# Arranging
+
+## All main results
+
+```{r}
+blankPlot <- ggplot()+geom_blank(aes(1,1)) + 
+  cowplot::theme_nothing()
+
+p2_plot <- p2_plot + guides(shape = guide_legend(override.aes = list(size = 5)))
+
+legend = get_legend(
+  p2_plot + 
+    theme(legend.position = "right") + 
+    theme(legend.position = c(0, 0)))
+
+arranged = ggarrange(
+  p2_plot + theme(legend.position = "none"),
+  sgss_plot + theme(legend.position = "none"),
+  legend,
+  css_plot + theme(legend.position = "none"),
+  cis_plot + theme(legend.position = "none"),
+  blankPlot,
+  ncol = 3,
+  nrow = 2) + 
+  colour_scale_all +
+  guides(colour = guide_legend(override.aes = list(size=10)))
+
+ggsave('Figures/Alignment/all_datasets.png', arranged, height = 9, width = 9)
+```

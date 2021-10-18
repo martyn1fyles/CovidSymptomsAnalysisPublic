@@ -1,0 +1,15 @@
+,0,1,symptom_name_raw,symptom_name_formatted,category
+0,-3.7374408,-3.6130357,fatigue,Fatigue,Systemic
+1,-1.9623305,-4.2061224,abdominal_pain,Abdominal pain,Gastrointestinal
+2,-3.5596118,-4.9967012,chest_pain,Chest pain,Lower respiratory tract
+3,-6.0388823,-5.041895,sore_throat,Sore throat,Upper respiratory tract
+4,-3.0532134,-3.3037262,shortness_of_breath,Shortness of breath,Lower respiratory tract
+5,-3.9585605,-4.22724,skipped_meals,Loss of appetite,Gastrointestinal
+6,-4.58909,-4.4282393,smell,Altered/loss of smell,Upper respiratory tract
+7,-6.0798383,-4.265852,unusual_muscle_pains,Muscle ache,Systemic
+8,-5.383025,-5.3149123,headache,Headache,Systemic
+9,-2.9697304,-3.8303413,hoarse_voice,Hoarse voice,Upper respiratory tract
+10,-1.5432392,-3.904972,delirium,Delirium,Altered state
+11,-4.7815228,-3.5746565,diarrhoea,Diarrhoea,Gastrointestinal
+12,-5.510433,-4.6467304,fever,Fever,Systemic
+13,-5.5811334,-4.0813174,persistent_cough,Cough,Lower respiratory tract

@@ -1,0 +1,348 @@
+---
+title: "SymptomFrequencies"
+author: "Martyn Fyles"
+date: "04/12/2020"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(reshape)
+library(scico)
+library(RColorBrewer)
+```
+
+# Data loading
+
+Read in symptom info tables
+
+```{r}
+# entire populations
+CTAS_pillar2_info = read.csv('Data/TTI_Pillar2/Symptom_infoOriginP2.csv')
+CTAS_sgss_info = read.csv('Data/TTI_SGSS/Symptom_infoOriginSGSS.csv')
+ONS_info = read.csv('Data/CommunityInfectionSurvey/symptoms_info.csv')
+Zoe_info = read.csv('Data/CovidSymptomStudy/DemographicSymptom_wide.csv')
+```
+
+Read in the lookup tables
+
+```{r}
+SymptomNameCategoryLookup = read.csv(
+  'Data/Lookups/SymptomNameCategoryLookup.csv'
+  )
+```
+
+# Data cleaning
+
+```{r}
+colnames(CTAS_pillar2_info)[1] <- 'symptom_name_raw'
+colnames(CTAS_sgss_info)[1] <- 'symptom_name_raw'
+colnames(ONS_info)[2] <- 'symptom_name_raw'
+colnames(Zoe_info)[2] <- 'symptom_name_raw'
+```
+
+
+# Data wrangling
+
+Join the tables to the lookup, filtering down to their respective entries. Rename the symptom proportion column to a standardized name, and mutate variables to standardized units where possible.
+
+```{r}
+CTAS_pillar2_symp_props = CTAS_pillar2_info %>%
+  inner_join(
+    SymptomNameCategoryLookup) %>%
+  filter(
+    dataset == 'CTAS') %>%
+  mutate(
+    prop_with_symptom = proportion_of_cases_with_symptom) %>%
+  select(
+    dataset,
+    symptom_name_formatted,
+    prop_with_symptom,
+    category
+    )
+
+CTAS_sgss_symp_props = CTAS_sgss_info %>%
+  inner_join(
+    SymptomNameCategoryLookup) %>%
+  filter(
+    dataset == 'CTAS') %>%
+  mutate(
+    prop_with_symptom = proportion_of_cases_with_symptom) %>%
+  select(
+    dataset,
+    symptom_name_formatted,
+    prop_with_symptom,
+    category
+    )
+
+ONS_symp_props = ONS_info %>%
+  inner_join(
+    SymptomNameCategoryLookup) %>%
+  filter(
+    dataset == 'ONS') %>%
+  mutate(
+    prop_with_symptom = proportion_fromsymptomatics/100) %>%
+  select(
+    dataset,
+    symptom_name_formatted,
+    prop_with_symptom,
+    category
+    )
+
+Zoe_symp_props = Zoe_info %>%
+  inner_join(SymptomNameCategoryLookup) %>%
+  filter(dataset == 'Zoe') %>%
+  mutate(
+    prop_with_symptom = proportion) %>%
+  select(
+    dataset,
+    symptom_name_formatted,
+    prop_with_symptom,
+    category
+    )
+```
+## Adding a name column to the datasets
+
+```{r}
+CTAS_pillar2_symp_props$name = "NHS Test & Trace\nPillar 2"
+CTAS_sgss_symp_props$name = "NHS Test & Trace\nSGSS"
+ONS_symp_props$name = "ONS Community\nInfection Survey"
+Zoe_symp_props$name = "Covid Symptom Study"
+```
+
+
+Append all symptom proportion data together.
+
+```{r}
+all_symptom_proportions = bind_rows(
+  CTAS_pillar2_symp_props,
+  CTAS_sgss_symp_props,
+  ONS_symp_props,
+  Zoe_symp_props
+  )
+```
+
+```{r}
+all_symptom_proportions %>% distinct(symptom_name_formatted) %>% arrange(symptom_name_formatted)
+```
+
+
+# Symptom frequency plots
+
+```{r}
+    # geom_col(
+    #   width = .9,
+    #   orientation = 'prop_with_symptom',
+    #   position = position_dodge2(
+    #     preserve = "single",
+    #     width = 10)) +
+```
+
+```{r}
+#expand.grid(, KEEP.OUT.ATTRS = TRUE, stringsAsFactors = TRUE)
+```
+
+This is a really horrible hack to make the plots nice. Essentially, we want to have explicit NA's for symptom that are not collected by a dataset. This means the plotting will leave an empty space, which makes my life easier when arranging the plots later on.
+
+```{r}
+symptoms = all_symptom_proportions %>% distinct(symptom_name_formatted)
+datasets = all_symptom_proportions %>% distinct(name)
+all_combinations = expand.grid.df(symptom_name_fromatted = symptoms, name = datasets)
+
+symptom_with_category = all_combinations %>%
+  left_join(SymptomNameCategoryLookup, by = 'symptom_name_formatted') %>%
+  distinct(category, symptom_name_formatted)
+
+all_combinations = all_combinations %>% left_join(symptom_with_category)
+
+# join to the original dataset, then work out which combinations do not 
+# exist in the data
+missing_symptom_dataset_combos = all_combinations %>%
+  left_join(all_symptom_proportions) %>%
+  filter(is.na(prop_with_symptom)) %>%
+  mutate(prop_with_symptom = NA) %>%
+  select(
+    symptom_name_formatted,
+    prop_with_symptom,
+    category,
+    name) %>%
+  left_join(
+    all_symptom_proportions %>% distinct(dataset, name)
+  )
+```
+
+```{r}
+colnames(all_symptom_proportions)
+```
+
+```{r}
+missing_symptom_dataset_combos %>%
+  distinct(dataset, symptom_name_formatted) %>%
+  arrange(dataset, symptom_name_formatted)
+```
+
+
+```{r}
+all_possible_symptom_proportions = rbind(all_symptom_proportions, missing_symptom_dataset_combos)
+```
+
+# Confidence interval
+
+```{r}
+name <- c('NHS Test & Trace\nPillar 2','NHS Test & Trace\nSGSS', 'ONS Community\nInfection Survey', 'Covid Symptom Study')
+sample_size = c(1637965, 112925, 9165, 6163)
+
+sample_size_df = data.frame(name, sample_size)
+
+all_possible_symptom_proportions = all_possible_symptom_proportions %>%
+  left_join(sample_size_df) %>%
+  mutate(lower_ci = qbeta(0.025, shape1 = prop_with_symptom*sample_size + 0.5, shape2 = sample_size - prop_with_symptom*sample_size + 0.5)) %>%
+  mutate(upper_ci = qbeta(1-0.025, shape1 = prop_with_symptom*sample_size + 0.5, shape2 = sample_size - prop_with_symptom*sample_size + 0.5))
+```
+
+```{r}
+all_possible_symptom_proportions %>% distinct()
+```
+
+
+```{r}
+category_names <- c(
+  'a' = 'Altered state',
+  'b' = 'Gastrointestinal',
+  'c' = 'Lower respiratory tract',
+  'd' = 'Other',
+  'e' = 'Systemic',
+  'f' = 'Upper respiratory tract'
+)
+```
+
+
+```{r}
+id = c('a', 'b', 'c', 'd', 'e', 'f')
+category = c(
+  'Altered state',
+  'Gastrointestinal',
+  'Lower respiratory tract',
+  'Other',
+  'Systemic',
+  'Upper respiratory tract')
+category_lookup = data.frame(category, id)
+```
+
+
+```{r}
+make_horizontal_plot_nature = function(data_in, title){
+  return(
+    ggplot(
+      data = data_in,
+      aes(
+        x = symptom_name_formatted,
+        y = prop_with_symptom * 100,
+        group = name,
+        fill = name)) +
+    geom_bar(
+      stat = 'identity',
+      position = 'dodge2') +
+    scale_fill_brewer(
+    type = "qual",
+    palette = 2,
+    direction = 1,
+    aesthetics = "fill") +
+    geom_errorbar(
+      aes(
+        ymin = lower_ci * 100,
+        ymax = upper_ci * 100,
+        fill = name),
+      position = position_dodge2(
+        width = 0.5,
+        padding = 0.5)) + 
+    ylim(0, 100) + 
+    facet_wrap(
+      ~ id,
+      ncol = 3,
+      scales = 'free_x') +
+    theme_minimal_grid() +
+    theme(
+      legend.position = 'bottom',
+      panel.spacing = unit(3, 'lines'),
+      strip.text = element_text(hjust = 0, size = 16),
+      axis.text.x = element_text(
+        angle = 45,
+        hjust = 1)) +
+    xlab('Symptom') +
+    ylab('Symptom frequency (%)') +
+    labs(fill = 'Dataset') +
+    scale_x_discrete(drop = FALSE)
+  )
+}
+
+  
+
+horiz_all = make_horizontal_plot_nature(
+  all_possible_symptom_proportions %>% distinct() %>% left_join(category_lookup), title = 'Proportion of symptomatic case with symptom')
+horiz_all
+ggsave('Figures/DescriptiveStatistics/SymptomFrequenciesHorizontal.png', width = 15, height = 12)
+```
+
+
+```{r}
+make_horizontal_plot = function(data_in, title){
+  return(
+    ggplot(
+      data = data_in,
+      aes(
+        x = symptom_name_formatted,
+        y = prop_with_symptom * 100,
+        group = name,
+        fill = name)) +
+    geom_bar(
+      stat = 'identity',
+      position = 'dodge2') +
+    scale_fill_brewer(
+    type = "qual",
+    palette = 2,
+    direction = 1,
+    aesthetics = "fill") +
+    geom_errorbar(
+      aes(
+        ymin = lower_ci * 100,
+        ymax = upper_ci * 100,
+        fill = name),
+      position = position_dodge2(
+        width = 0.5,
+        padding = 0.5)) + 
+    ylim(0, 100) + 
+    facet_wrap(
+      ~ category,
+      ncol = 3,
+      scales = 'free_x') +
+    theme_minimal_grid() +
+    theme(
+      legend.position = 'bottom',
+      panel.spacing = unit(3, 'lines'),
+      strip.text = element_text(hjust = 0, size = 16),
+      axis.text.x = element_text(
+        angle = 45,
+        hjust = 1)) +
+    xlab('Symptom') +
+    ylab('Symptom frequency (%)') +
+    labs(fill = 'Dataset') +
+    scale_x_discrete(drop = FALSE)
+  )
+}
+
+  
+
+horiz_all = make_horizontal_plot(
+  all_possible_symptom_proportions, title = 'Proportion of symptomatic case with symptom')
+horiz_all
+ggsave('Figures/DescriptiveStatistics/SymptomFrequenciesHorizontal.png', width = 15, height = 12)
+```
+
+```{r}
+write.csv(file = 'Data/SymptomFrequencies.csv', all_symptom_proportions)
+```
+
+

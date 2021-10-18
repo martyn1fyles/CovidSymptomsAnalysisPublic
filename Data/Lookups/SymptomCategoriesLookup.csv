@@ -1,0 +1,28 @@
+"symptom_name_formatted","category","category_id"
+"Abdominal pain","Gastrointestinal",1
+"Altered conciousness","Altered state",2
+"Altered/loss of smell","Upper respiratory tract",3
+"Chest pain","Lower respiratory tract",4
+"Cough","Lower respiratory tract",4
+"Delirium","Altered state",2
+"Diarrhoea","Gastrointestinal",1
+"Fatigue","Systemic",5
+"Fever","Systemic",5
+"Headache","Systemic",5
+"Hoarse voice","Upper respiratory tract",3
+"Joint Pain","Systemic",5
+"Loss of appetite","Gastrointestinal",1
+"Loss of smell","Upper respiratory tract",3
+"Loss of smell or taste","Upper respiratory tract",3
+"Loss of taste","Upper respiratory tract",3
+"Muscle ache","Systemic",5
+"Nausea","Gastrointestinal",1
+"Nausea/vomiting","Gastrointestinal",1
+"Nose bleed","Other",6
+"Rash","Other",6
+"Rhinitis","Upper respiratory tract",3
+"Seizures","Altered state",2
+"Shortness of breath","Lower respiratory tract",4
+"Sneezing","Upper respiratory tract",3
+"Sore throat","Upper respiratory tract",3
+"Vomiting","Gastrointestinal",1

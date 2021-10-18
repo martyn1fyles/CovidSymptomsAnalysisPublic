@@ -1,0 +1,2511 @@
+---
+title: "Hierarchal Clustering"
+output: html_notebook
+---
+
+```{r}
+source('Visualisation/my_functions.R')
+```
+
+
+# Libraries
+
+```{r}
+library(reshape2)
+library(ggdendro)
+library(ggplot2)
+library(cowplot)
+library(dplyr)
+library(RColorBrewer)
+library(scico)
+library(ggpubr)
+```
+
+# Load distance matrices
+
+Distance matrices
+```{r}
+# entire population
+CTAS_pillar2 = read.csv('Data/TTI_Pillar2/DistanceMatrixJaccardOriginPillar2.csv')
+CTAS_sgss = read.csv('Data/TTI_SGSS/DistanceMatrixJaccardOriginSGSS.csv')
+ONS = read.csv('Data/CommunityInfectionSurvey/DistanceMatrixJaccard.csv')
+CSS = read.csv('Data/CovidSymptomStudy/JaccardSymptomWide.csv')
+
+# age stratified
+Zoe_children = read.csv('Data/CovidSymptomStudyAgeSeperated/JaccardSymptom_children.csv')
+Zoe_adults = read.csv('Data/CovidSymptomStudyAgeSeperated/JaccardSymptom_adults.csv')
+Zoe_elder = read.csv('Data/CovidSymptomStudyAgeSeperated/JaccardSymptom_elder.csv')
+
+ONS_children = read.csv('Data/CommunityInfectionSurveyAgeStratified/DistanceMatrixJaccard_18.csv')
+ONS_adults = read.csv('Data/CommunityInfectionSurveyAgeStratified/DistanceMatrixJaccard_18_54.csv')
+ONS_elder = read.csv('Data/CommunityInfectionSurveyAgeStratified/DistanceMatrixJaccard_55.csv')
+
+CTAS_p2_children = read.csv('Data/TTI_Pillar2_AgeStratified/JaccardDistanceMatrixPopulationStatsOriginP2Below18.csv')
+CTAS_p2_adults = read.csv('Data/TTI_Pillar2_AgeStratified/JaccardDistanceMatrixPopulationStatsOriginP218-54.csv')
+CTAS_p2_elder = read.csv('Data/TTI_Pillar2_AgeStratified/JaccardDistanceMatrixPopulationStatsOriginP255Plus.csv')
+
+CTAS_SGSS_children = read.csv('Data/TTI_SGSS_AgeStratified/JaccardDistanceMatrixPopulationStatsOriginSGSSBelow18.csv')
+CTAS_SGSS_adults = read.csv('Data/TTI_SGSS_AgeStratified/JaccardDistanceMatrixPopulationStatsOriginSGSS18-54.csv')
+CTAS_SGSS_elder = read.csv('Data/TTI_SGSS_AgeStratified/JaccardDistanceMatrixPopulationStatsOriginSGSS55Plus.csv')
+```
+
+
+Lookups
+
+```{r}
+SymptomsNameCategoryLookup= read.csv(
+  'Data/Lookups/SymptomNameCategoryLookup.csv'
+  )
+categories = read.csv(
+  'Data/Lookups/CategoriesLookup.csv'
+  )
+```
+
+Convert to long data format, which is required for the heatmaps, then join both columns to the lookup table to get formatted names. Filter down to the lookup entries for the relevant dataset only.
+
+```{r}
+CTAS_pillar2_long = melt(CTAS_pillar2) %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('X' = 'symptom_name_raw')) %>%
+  filter(dataset == 'CTAS') %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('variable' = 'symptom_name_raw')) %>%
+  filter(dataset.x == 'CTAS') %>%
+  filter(dataset.y == 'CTAS') %>%
+  select(
+    symptom_name_formatted.x,
+    symptom_name_formatted.y,
+    value
+  )
+
+CTAS_sgss_long = melt(CTAS_sgss) %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('X' = 'symptom_name_raw')) %>%
+  filter(dataset == 'CTAS') %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('variable' = 'symptom_name_raw')) %>%
+  filter(dataset.x == 'CTAS') %>%
+  filter(dataset.y == 'CTAS') %>%
+  select(
+    symptom_name_formatted.x,
+    symptom_name_formatted.y,
+    value
+  )
+
+ONS_long = melt(ONS) %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('X' = 'symptom_name_raw')) %>%
+  filter(dataset == 'ONS') %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('variable' = 'symptom_name_raw')) %>%
+  filter(dataset.x == 'ONS') %>%
+  filter(dataset.y == 'ONS') %>%
+  select(
+    symptom_name_formatted.x,
+    symptom_name_formatted.y,
+    value
+  )
+
+CSS_long = melt(CSS) %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('X' = 'symptom_name_raw')) %>%
+  filter(dataset == 'Zoe') %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('variable' = 'symptom_name_raw')) %>%
+  filter(dataset.x == 'Zoe') %>%
+  filter(dataset.y == 'Zoe') %>%
+  select(
+    symptom_name_formatted.x,
+    symptom_name_formatted.y,
+    value
+  )
+
+# age stratified
+# zoe
+Zoe_long_children = melt(Zoe_children) %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('X' = 'symptom_name_raw')) %>%
+  filter(dataset == 'Zoe') %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('variable' = 'symptom_name_raw')) %>%
+  filter(dataset.x == 'Zoe') %>%
+  filter(dataset.y == 'Zoe') %>%
+  select(
+    symptom_name_formatted.x,
+    symptom_name_formatted.y,
+    value
+  )
+
+Zoe_long_adults = melt(Zoe_adults) %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('X' = 'symptom_name_raw')) %>%
+  filter(dataset == 'Zoe') %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('variable' = 'symptom_name_raw')) %>%
+  filter(dataset.x == 'Zoe') %>%
+  filter(dataset.y == 'Zoe') %>%
+  select(
+    symptom_name_formatted.x,
+    symptom_name_formatted.y,
+    value
+  )
+
+Zoe_long_elder = melt(Zoe_elder) %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('X' = 'symptom_name_raw')) %>%
+  filter(dataset == 'Zoe') %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('variable' = 'symptom_name_raw')) %>%
+  filter(dataset.x == 'Zoe') %>%
+  filter(dataset.y == 'Zoe') %>%
+  select(
+    symptom_name_formatted.x,
+    symptom_name_formatted.y,
+    value
+  )
+
+# pillar 2
+CTAS_p2_children_long = melt(CTAS_p2_children) %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('X' = 'symptom_name_raw')) %>%
+  filter(dataset == 'CTAS') %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('variable' = 'symptom_name_raw')) %>%
+  filter(dataset.x == 'CTAS') %>%
+  filter(dataset.y == 'CTAS') %>%
+  select(
+    symptom_name_formatted.x,
+    symptom_name_formatted.y,
+    value
+  )
+
+CTAS_p2_adults_long = melt(CTAS_p2_adults) %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('X' = 'symptom_name_raw')) %>%
+  filter(dataset == 'CTAS') %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('variable' = 'symptom_name_raw')) %>%
+  filter(dataset.x == 'CTAS') %>%
+  filter(dataset.y == 'CTAS') %>%
+  select(
+    symptom_name_formatted.x,
+    symptom_name_formatted.y,
+    value
+  )
+
+CTAS_p2_elder_long = melt(CTAS_p2_elder) %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('X' = 'symptom_name_raw')) %>%
+  filter(dataset == 'CTAS') %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('variable' = 'symptom_name_raw')) %>%
+  filter(dataset.x == 'CTAS') %>%
+  filter(dataset.y == 'CTAS') %>%
+  select(
+    symptom_name_formatted.x,
+    symptom_name_formatted.y,
+    value
+  )
+
+# sgss
+CTAS_SGSS_children_long = melt(CTAS_SGSS_children) %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('X' = 'symptom_name_raw')) %>%
+  filter(dataset == 'CTAS') %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('variable' = 'symptom_name_raw')) %>%
+  filter(dataset.x == 'CTAS') %>%
+  filter(dataset.y == 'CTAS') %>%
+  select(
+    symptom_name_formatted.x,
+    symptom_name_formatted.y,
+    value
+  )
+
+CTAS_SGSS_adults_long = melt(CTAS_SGSS_adults) %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('X' = 'symptom_name_raw')) %>%
+  filter(dataset == 'CTAS') %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('variable' = 'symptom_name_raw')) %>%
+  filter(dataset.x == 'CTAS') %>%
+  filter(dataset.y == 'CTAS') %>%
+  select(
+    symptom_name_formatted.x,
+    symptom_name_formatted.y,
+    value
+  )
+
+CTAS_SGSS_elder_long = melt(CTAS_SGSS_elder) %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('X' = 'symptom_name_raw')) %>%
+  filter(dataset == 'CTAS') %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('variable' = 'symptom_name_raw')) %>%
+  filter(dataset.x == 'CTAS') %>%
+  filter(dataset.y == 'CTAS') %>%
+  select(
+    symptom_name_formatted.x,
+    symptom_name_formatted.y,
+    value
+  )
+
+# ons
+ONS_children_long = melt(ONS_children) %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('X' = 'symptom_name_raw')) %>%
+  filter(dataset == 'ONS') %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('variable' = 'symptom_name_raw')) %>%
+  filter(dataset.x == 'ONS') %>%
+  filter(dataset.y == 'ONS') %>%
+  select(
+    symptom_name_formatted.x,
+    symptom_name_formatted.y,
+    value
+  )
+
+ONS_adults_long = melt(ONS_adults) %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('X' = 'symptom_name_raw')) %>%
+  filter(dataset == 'ONS') %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('variable' = 'symptom_name_raw')) %>%
+  filter(dataset.x == 'ONS') %>%
+  filter(dataset.y == 'ONS') %>%
+  select(
+    symptom_name_formatted.x,
+    symptom_name_formatted.y,
+    value
+  )
+
+ONS_elder_long = melt(ONS_elder) %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('X' = 'symptom_name_raw')) %>%
+  filter(dataset == 'ONS') %>%
+  inner_join(SymptomsNameCategoryLookup, by = c('variable' = 'symptom_name_raw')) %>%
+  filter(dataset.x == 'ONS') %>%
+  filter(dataset.y == 'ONS') %>%
+  select(
+    symptom_name_formatted.x,
+    symptom_name_formatted.y,
+    value
+  )
+```
+
+Symptom information tables
+
+```{r}
+# entire population
+CTAS_pillar2_symptom_info = read.csv('Data/TTI_SGSS/Symptom_infoOriginSGSS.csv')
+CTAS_sgss_symptom_info = read.csv('Data/TTI_Pillar2/Symptom_infoOriginP2.csv')
+ONS_symptom_info = read.csv('Data/CommunityInfectionSurvey/symptoms_info.csv')
+CSS_symptom_info = read.csv('Data/CovidSymptomStudy/DemographicSymptom_wide.csv')
+
+# age stratified
+zoe_symptom_info_children = read.csv('Data/CovidSymptomStudyAgeSeperated/DemographicSymptom_children.csv')
+zoe_symptom_info_adults = read.csv('Data/CovidSymptomStudyAgeSeperated/DemographicSymptom_adults.csv')
+zoe_symptom_info_elder = read.csv('Data/CovidSymptomStudyAgeSeperated/DemographicSymptom_elder.csv')
+
+CTAS_p2_symptom_info_children = read.csv('Data/TTI_Pillar2_AgeStratified/Symptom_infoOriginP2Below18.csv')
+CTAS_p2_symptom_info_adults = read.csv('Data/TTI_Pillar2_AgeStratified/Symptom_infoOriginP218-54.csv')
+CTAS_p2_symptom_info_elder = read.csv('Data/TTI_Pillar2_AgeStratified/Symptom_infoOriginP255Plus.csv')
+
+CTAS_SGSS_symptom_info_children = read.csv('Data/TTI_SGSS_AgeStratified/Symptom_infoOriginSGSSBelow18.csv')
+CTAS_SGSS_symptom_info_adults = read.csv('Data/TTI_SGSS_AgeStratified/Symptom_infoOriginSGSS18-54.csv')
+CTAS_SGSS_symptom_info_elder = read.csv('Data/TTI_SGSS_AgeStratified/Symptom_infoOriginSGSS55Plus.csv')
+
+ONS_symptom_info_children = read.csv('Data/CommunityInfectionSurveyAgeStratified/symptoms_info_18.csv')
+ONS_symptom_info_adults = read.csv('Data/CommunityInfectionSurveyAgeStratified/symptoms_info_18_54.csv')
+ONS_symptom_info_elder = read.csv('Data/CommunityInfectionSurveyAgeStratified/symptoms_info_55.csv')
+```
+
+Establish uniform naming convention
+
+```{r}
+# entire population
+colnames(CTAS_pillar2_symptom_info)[1] = 'symptom_name_raw'
+colnames(CTAS_sgss_symptom_info)[1] = 'symptom_name_raw'
+colnames(ONS_symptom_info)[2] = 'symptom_name_raw'
+colnames(CSS_symptom_info)[2] = 'symptom_name_raw'
+
+# age stratified
+
+colnames(zoe_symptom_info_children)[2] = 'symptom_name_raw'
+colnames(zoe_symptom_info_adults)[2] = 'symptom_name_raw'
+colnames(zoe_symptom_info_elder)[2] = 'symptom_name_raw'
+
+colnames(CTAS_p2_symptom_info_children)[1] = 'symptom_name_raw'
+colnames(CTAS_p2_symptom_info_adults)[1] = 'symptom_name_raw'
+colnames(CTAS_p2_symptom_info_elder)[1] = 'symptom_name_raw'
+
+colnames(CTAS_SGSS_symptom_info_children)[1] = 'symptom_name_raw'
+colnames(CTAS_SGSS_symptom_info_adults)[1] = 'symptom_name_raw'
+colnames(CTAS_SGSS_symptom_info_elder)[1] = 'symptom_name_raw'
+
+colnames(ONS_symptom_info_children)[2] = 'symptom_name_raw'
+colnames(ONS_symptom_info_adults)[2] = 'symptom_name_raw'
+colnames(ONS_symptom_info_elder)[2] = 'symptom_name_raw'
+```
+
+## Dendrogram grobs
+
+```{r}
+category_legend = guides(colour = guide_legend(override.aes = list(size=5), nrow = 3))
+
+y_scale = scale_y_continuous(
+    name="Jaccard distance",
+    breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0),
+    limits=c(-0.5, 1))
+
+remove_axis_arrange_legend = theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.line = element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        legend.position = "bottom",
+        legend.box = "vertical",
+        legend.justification = ("right")
+  )
+
+size_scaling =  scale_size_continuous(
+    breaks = c(20, 40, 60, 80, 100),
+    labels = c(20, 40, 60, 80, 100),
+    limits = c(0, 100),
+    range = c(2,6)
+   )
+
+shifted_y_scale = scale_y_continuous(
+    name="Jaccard distance",
+    breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0),
+    limits=c(-0.5, 1))
+```
+
+Heatmap grobs
+
+```{r}
+heatmap_theme = theme(axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = 'top',
+        axis.text.x = element_text(
+          angle = 90,
+          hjust = 1,
+          vjust = 0.5,
+          size = 12))
+
+
+z_axis_scale = scico::scale_fill_scico(
+    palette = "roma",
+    limits = c(0, 1))
+```
+
+
+# Data cleaning
+
+We wrangle the raw distance matrices into a form that can be used as an input to as.dist. Really ought to convert this into a function...
+
+```{r}
+# pillar 2
+CTAS_pillar2_symptom_names = CTAS_pillar2[,1]
+CTAS_pillar2 = CTAS_pillar2[-1]
+rownames(CTAS_pillar2) <- CTAS_pillar2_symptom_names
+CTAS_pillar2_dist = as.dist(CTAS_pillar2)
+
+# sgss
+CTAS_sgss_symptom_names = CTAS_sgss[,1]
+CTAS_sgss = CTAS_sgss[-1]
+rownames(CTAS_sgss) <- CTAS_sgss_symptom_names
+CTAS_sgss_dist = as.dist(CTAS_sgss)
+
+# ONS
+ONS_symptom_names = ONS[,1]
+ONS = ONS[,-1]
+rownames(ONS) <- ONS_symptom_names
+ONS_dist = as.dist(ONS)
+
+# CSS
+CSS_symptom_names = CSS[,1]
+CSS = CSS[,-1]
+rownames(CSS) <- CSS_symptom_names
+CSS_dist = as.dist(CSS)
+
+# age stratified
+zoe_symptom_names_children = Zoe_children[,1]
+Zoe_children = Zoe_children[-1]
+rownames(Zoe_children) <- zoe_symptom_names_children
+zoe_dist_children = as.dist(Zoe_children)
+
+zoe_symptom_names_adults = Zoe_adults[,1]
+Zoe_adults = Zoe_adults[-1]
+rownames(Zoe_adults) <- zoe_symptom_names_adults
+zoe_dist_adults = as.dist(Zoe_adults)
+
+zoe_symptom_names_elder = Zoe_elder[,1]
+Zoe_elder = Zoe_elder[-1]
+rownames(Zoe_elder) <- zoe_symptom_names_elder
+zoe_dist_elder = as.dist(Zoe_elder)
+
+# CTAS pillar 2
+p2_symptom_names_children = CTAS_p2_children[,1]
+CTAS_p2_children = CTAS_p2_children[-1]
+rownames(CTAS_p2_children) <- p2_symptom_names_children
+p2_dist_children = as.dist(CTAS_p2_children)
+
+p2_symptom_names_adults = CTAS_p2_adults[,1]
+CTAS_p2_adults = CTAS_p2_adults[-1]
+rownames(CTAS_p2_adults) <- p2_symptom_names_adults
+p2_dist_adults = as.dist(CTAS_p2_adults)
+
+p2_symptom_names_elder = CTAS_p2_elder[,1]
+CTAS_p2_elder = CTAS_p2_elder[-1]
+rownames(CTAS_p2_elder) <- p2_symptom_names_elder
+p2_dist_elder = as.dist(CTAS_p2_elder)
+
+
+# CTAS SGSS
+SGSS_symptom_names_children = CTAS_SGSS_children[,1]
+CTAS_SGSS_children = CTAS_SGSS_children[-1]
+rownames(CTAS_SGSS_children) <- SGSS_symptom_names_children
+SGSS_dist_children = as.dist(CTAS_SGSS_children)
+
+SGSS_symptom_names_adults = CTAS_SGSS_adults[,1]
+CTAS_SGSS_adults = CTAS_SGSS_adults[-1]
+rownames(CTAS_SGSS_adults) <- SGSS_symptom_names_adults
+SGSS_dist_adults = as.dist(CTAS_SGSS_adults)
+
+SGSS_symptom_names_elder = CTAS_SGSS_elder[,1]
+CTAS_SGSS_elder = CTAS_SGSS_elder[-1]
+rownames(CTAS_SGSS_elder) <- SGSS_symptom_names_elder
+SGSS_dist_elder = as.dist(CTAS_SGSS_elder)
+
+# ONS
+ONS_symptom_names_children = ONS_children[,1]
+ONS_children = ONS_children[-1]
+rownames(ONS_children) <- ONS_symptom_names_children
+ONS_dist_children = as.dist(ONS_children)
+
+ONS_symptom_names_adults = ONS_adults[,1]
+ONS_adults = ONS_adults[-1]
+rownames(ONS_adults) <- ONS_symptom_names_adults
+ONS_dist_adults = as.dist(ONS_adults)
+
+ONS_symptom_names_elder = ONS_elder[,1]
+ONS_elder = ONS_elder[-1]
+rownames(ONS_elder) <- ONS_symptom_names_elder
+ONS_dist_elder = as.dist(ONS_elder)
+```
+
+# Extract symptom_names from datasets
+
+We join the the lookup table that provides fromatted names for symptoms and assigns categories.
+
+```{r}
+# entire population
+CTAS_pillar2_symptom_names_df = data.frame(CTAS_pillar2_symptom_names)
+colnames(CTAS_pillar2_symptom_names_df) <- 'symptom_name_raw'
+
+CTAS_sgss_symptom_names_df = data.frame(CTAS_sgss_symptom_names)
+colnames(CTAS_sgss_symptom_names_df) <- 'symptom_name_raw'
+
+ONS_symptom_names_df = data.frame(ONS_symptom_names)
+colnames(ONS_symptom_names_df) <- 'symptom_name_raw'
+
+CSS_symptom_names_df = data.frame(CSS_symptom_names)
+colnames(CSS_symptom_names_df) <- 'symptom_name_raw'
+
+# age stratified
+# zoe
+zoe_symptom_names_df_children = data.frame(zoe_symptom_names_children)
+colnames(zoe_symptom_names_df_children) <- 'symptom_name_raw'
+
+zoe_symptom_names_df_adults = data.frame(zoe_symptom_names_adults)
+colnames(zoe_symptom_names_df_adults) <- 'symptom_name_raw'
+
+zoe_symptom_names_df_elder = data.frame(zoe_symptom_names_elder)
+colnames(zoe_symptom_names_df_elder) <- 'symptom_name_raw'
+
+# pillar 2
+p2_symptom_names_df_children = data.frame(p2_symptom_names_children)
+colnames(p2_symptom_names_df_children) <- 'symptom_name_raw'
+
+p2_symptom_names_df_adults = data.frame(p2_symptom_names_adults)
+colnames(p2_symptom_names_df_adults) <- 'symptom_name_raw'
+
+p2_symptom_names_df_elder = data.frame(p2_symptom_names_elder)
+colnames(p2_symptom_names_df_elder) <- 'symptom_name_raw'
+
+# sgss
+SGSS_symptom_names_df_children = data.frame(SGSS_symptom_names_children)
+colnames(SGSS_symptom_names_df_children) <- 'symptom_name_raw'
+
+SGSS_symptom_names_df_adults = data.frame(SGSS_symptom_names_adults)
+colnames(SGSS_symptom_names_df_adults) <- 'symptom_name_raw'
+
+SGSS_symptom_names_df_elder = data.frame(SGSS_symptom_names_elder)
+colnames(SGSS_symptom_names_df_elder) <- 'symptom_name_raw'
+
+# ONS
+ONS_symptom_names_df_children = data.frame(ONS_symptom_names_children)
+colnames(ONS_symptom_names_df_children) <- 'symptom_name_raw'
+
+ONS_symptom_names_df_adults = data.frame(ONS_symptom_names_adults)
+colnames(ONS_symptom_names_df_adults) <- 'symptom_name_raw'
+
+ONS_symptom_names_df_elder = data.frame(ONS_symptom_names_elder)
+colnames(ONS_symptom_names_df_elder) <- 'symptom_name_raw'
+```
+
+Perform joins and do formatting
+
+```{r}
+CTAS_pillar2_symptom_names_df = CTAS_pillar2_symptom_names_df %>%
+  inner_join(SymptomsNameCategoryLookup) %>%
+  inner_join(CTAS_pillar2_symptom_info) %>%
+  filter(dataset == 'CTAS') %>%
+  mutate(
+    cases_with_symptom_prop = round(proportion_of_cases_with_symptom*100)) %>%
+  mutate(symptom_name_formatted_with_perc = paste(
+    symptom_name_formatted,
+    " (",
+    cases_with_symptom_prop,
+    "%)",
+    sep = ""
+  ))
+
+CTAS_sgss_symptom_names_df = CTAS_sgss_symptom_names_df %>%
+  inner_join(SymptomsNameCategoryLookup) %>%
+  inner_join(CTAS_sgss_symptom_info) %>%
+  filter(dataset == 'CTAS') %>%
+  mutate(
+    cases_with_symptom_prop = round(proportion_of_cases_with_symptom*100)) %>%
+  mutate(symptom_name_formatted_with_perc = paste(
+    symptom_name_formatted,
+    " (",
+    cases_with_symptom_prop,
+    "%)",
+    sep = ""
+  ))
+
+ONS_symptom_names_df = ONS_symptom_names_df %>%
+  inner_join(SymptomsNameCategoryLookup) %>%
+  inner_join(ONS_symptom_info) %>%
+  filter(dataset == 'ONS')%>%
+  mutate(
+    cases_with_symptom_prop = round(proportion_fromsymptomatics)) %>%
+  mutate(symptom_name_formatted_with_perc = paste(
+    symptom_name_formatted,
+    " (",
+    cases_with_symptom_prop,
+    "%)",
+    sep = ""
+  ))
+
+CSS_symptom_names_df = CSS_symptom_names_df %>%
+  inner_join(SymptomsNameCategoryLookup) %>%
+  inner_join(CSS_symptom_info) %>%
+  filter(dataset == 'Zoe')%>%
+  mutate(
+    cases_with_symptom_prop = round(proportion*100)) %>%
+  mutate(symptom_name_formatted_with_perc = paste(
+    symptom_name_formatted,
+    " (",
+    cases_with_symptom_prop,
+    "%)",
+    sep = ""
+  ))
+
+# age stratified
+zoe_symptom_names_df_children = zoe_symptom_names_df_children %>%
+  left_join(SymptomsNameCategoryLookup) %>%
+  left_join(zoe_symptom_info_children) %>%
+  filter(dataset == 'Zoe') %>%
+    mutate(
+    cases_with_symptom_prop = round(proportion*100)) %>%
+  mutate(symptom_name_formatted_with_perc = paste(
+    symptom_name_formatted,
+    " (",
+    cases_with_symptom_prop,
+    "%)",
+    sep = ""
+  ))
+
+zoe_symptom_names_df_adults = zoe_symptom_names_df_adults %>%
+  left_join(SymptomsNameCategoryLookup) %>%
+  left_join(zoe_symptom_info_adults) %>%
+  filter(dataset == 'Zoe') %>%
+    mutate(
+    cases_with_symptom_prop = round(proportion*100)) %>%
+  mutate(symptom_name_formatted_with_perc = paste(
+    symptom_name_formatted,
+    " (",
+    cases_with_symptom_prop,
+    "%)",
+    sep = ""
+  ))
+
+zoe_symptom_names_df_elder = zoe_symptom_names_df_elder %>%
+  left_join(SymptomsNameCategoryLookup) %>%
+  left_join(zoe_symptom_info_elder) %>%
+  filter(dataset == 'Zoe') %>%
+    mutate(
+    cases_with_symptom_prop = round(proportion*100)) %>%
+  mutate(symptom_name_formatted_with_perc = paste(
+    symptom_name_formatted,
+    " (",
+    cases_with_symptom_prop,
+    "%)",
+    sep = ""
+  ))
+
+# pillar 2
+p2_symptom_names_df_children = p2_symptom_names_df_children %>%
+  inner_join(SymptomsNameCategoryLookup) %>%
+  inner_join(CTAS_p2_symptom_info_children) %>%
+  filter(dataset == 'CTAS') %>%
+  mutate(
+    cases_with_symptom_prop = round(proportion_of_cases_with_symptom*100)) %>%
+  mutate(symptom_name_formatted_with_perc = paste(
+    symptom_name_formatted,
+    " (",
+    cases_with_symptom_prop,
+    "%)",
+    sep = ""
+  ))
+
+p2_symptom_names_df_adults = p2_symptom_names_df_adults %>%
+  inner_join(SymptomsNameCategoryLookup) %>%
+  inner_join(CTAS_p2_symptom_info_adults) %>%
+  filter(dataset == 'CTAS') %>%
+  mutate(
+    cases_with_symptom_prop = round(proportion_of_cases_with_symptom*100)) %>%
+  mutate(symptom_name_formatted_with_perc = paste(
+    symptom_name_formatted,
+    " (",
+    cases_with_symptom_prop,
+    "%)",
+    sep = ""
+  ))
+
+p2_symptom_names_df_elder = p2_symptom_names_df_elder %>%
+  inner_join(SymptomsNameCategoryLookup) %>%
+  inner_join(CTAS_p2_symptom_info_elder) %>%
+  filter(dataset == 'CTAS') %>%
+  mutate(
+    cases_with_symptom_prop = round(proportion_of_cases_with_symptom*100)) %>%
+  mutate(symptom_name_formatted_with_perc = paste(
+    symptom_name_formatted,
+    " (",
+    cases_with_symptom_prop,
+    "%)",
+    sep = ""
+  ))
+
+# sgss
+SGSS_symptom_names_df_children = SGSS_symptom_names_df_children %>%
+  inner_join(SymptomsNameCategoryLookup) %>%
+  inner_join(CTAS_SGSS_symptom_info_children) %>%
+  filter(dataset == 'CTAS') %>%
+  mutate(
+    cases_with_symptom_prop = round(proportion_of_cases_with_symptom*100)) %>%
+  mutate(symptom_name_formatted_with_perc = paste(
+    symptom_name_formatted,
+    " (",
+    cases_with_symptom_prop,
+    "%)",
+    sep = ""
+  ))
+
+SGSS_symptom_names_df_adults = SGSS_symptom_names_df_adults %>%
+  inner_join(SymptomsNameCategoryLookup) %>%
+  inner_join(CTAS_SGSS_symptom_info_adults) %>%
+  filter(dataset == 'CTAS') %>%
+  mutate(
+    cases_with_symptom_prop = round(proportion_of_cases_with_symptom*100)) %>%
+  mutate(symptom_name_formatted_with_perc = paste(
+    symptom_name_formatted,
+    " (",
+    cases_with_symptom_prop,
+    "%)",
+    sep = ""
+  ))
+
+SGSS_symptom_names_df_elder = SGSS_symptom_names_df_elder %>%
+  inner_join(SymptomsNameCategoryLookup) %>%
+  inner_join(CTAS_SGSS_symptom_info_elder) %>%
+  filter(dataset == 'CTAS') %>%
+  mutate(
+    cases_with_symptom_prop = round(proportion_of_cases_with_symptom*100)) %>%
+  mutate(symptom_name_formatted_with_perc = paste(
+    symptom_name_formatted,
+    " (",
+    cases_with_symptom_prop,
+    "%)",
+    sep = ""
+  ))
+
+# ONS
+ONS_symptom_names_df_children = ONS_symptom_names_df_children %>%
+  inner_join(SymptomsNameCategoryLookup) %>%
+  inner_join(ONS_symptom_info) %>%
+  filter(dataset == 'ONS')%>%
+  mutate(
+    cases_with_symptom_prop = round(proportion_fromsymptomatics)) %>%
+  mutate(symptom_name_formatted_with_perc = paste(
+    symptom_name_formatted,
+    " (",
+    cases_with_symptom_prop,
+    "%)",
+    sep = ""
+  ))
+
+ONS_symptom_names_df_adults = ONS_symptom_names_df_adults %>%
+  inner_join(SymptomsNameCategoryLookup) %>%
+  inner_join(ONS_symptom_info) %>%
+  filter(dataset == 'ONS')%>%
+  mutate(
+    cases_with_symptom_prop = round(proportion_fromsymptomatics)) %>%
+  mutate(symptom_name_formatted_with_perc = paste(
+    symptom_name_formatted,
+    " (",
+    cases_with_symptom_prop,
+    "%)",
+    sep = ""
+  ))
+
+ONS_symptom_names_df_elder = ONS_symptom_names_df_elder %>%
+  inner_join(SymptomsNameCategoryLookup) %>%
+  inner_join(ONS_symptom_info) %>%
+  filter(dataset == 'ONS')%>%
+  mutate(
+    cases_with_symptom_prop = round(proportion_fromsymptomatics)) %>%
+  mutate(symptom_name_formatted_with_perc = paste(
+    symptom_name_formatted,
+    " (",
+    cases_with_symptom_prop,
+    "%)",
+    sep = ""
+  ))
+```
+
+
+# DendroHeatmaps
+
+```{r}
+text_size = 0.01
+```
+
+
+## CTAS Pillar 2
+
+The code here is a bit tricky. To begin, we create a dendrogram using the h_clust function. We then extract the dendrogram as line segments using a combination of as.dendrogram and dendro_data. We do this since it allows much more low level graphical tweaking, and plotting other points on top.
+
+```{r}
+CTAS_pillar2_dendro_dd_row = as.dendrogram(
+  hclust(
+    CTAS_pillar2_dist,
+    method = 'complete'
+    )
+  )
+CTAS_pillar2_dendro_data = dendro_data(CTAS_pillar2_dendro_dd_row)
+```
+
+The dendro_data table contains the names that were on the Jaccard distance matrix. We join to the symptom information table so that we can encode more information onto the dendrogram.
+
+```{r}
+CTAS_pillar2_dendro_data$labels = CTAS_pillar2_dendro_data$labels %>% 
+  left_join(
+    CTAS_pillar2_symptom_names_df,
+    by = c('label' = 'symptom_name_raw')
+    )
+```
+
+We now recreate the dendrogram in ggplot2, but we can make use of the additional data that has been added to the dendro_data table.
+
+```{r}
+remove_axis_arrange_legend = theme(
+  axis.title.x=element_blank(),
+        #axis.text.x=element_blank(),
+        #axis.ticks.x=element_blank(),
+        axis.line = element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        legend.position = "bottom",
+        legend.box = "vertical",
+        legend.justification = c(0.5,0))
+```
+
+
+```{r}
+CTAS_pillar2_dendrogram <- ggplot(segment(CTAS_pillar2_dendro_data)) +
+  geom_segment(
+    aes(x=x, y=y, xend=xend, yend=yend)) + 
+  geom_text(
+    data=label(CTAS_pillar2_dendro_data),
+    aes(
+      label=symptom_name_formatted_with_perc,
+      x=x,
+      y=-0.05,
+      angle='0',
+      hjust = 1,
+      label_size = text_size)) +
+  geom_point(
+    data = CTAS_pillar2_dendro_data$labels,
+    aes(
+      x=x,
+      y=0,
+      size=proportion_of_cases_with_symptom*100,
+      color=category)) +
+  labs(
+    size = 'Cases with symptom (%)',
+    color = 'Category') + 
+  theme_cowplot(font_size = 12) + 
+  remove_axis_arrange_legend + 
+  shifted_y_scale +
+  colour_scale_all + 
+  size_scaling + 
+  coord_flip() +
+  category_legend
+CTAS_pillar2_dendrogram
+```
+
+### Heatmap
+
+```{r}
+# get the ordering from the dendrogram
+CTAS_pillar2_order = order.dendrogram(CTAS_pillar2_dendro_dd_row)
+
+# Order the levels according to their position in the dendrogram
+CTAS_pillar2_long$symptom_name_formatted.x = factor(
+  x = CTAS_pillar2_long$symptom_name_formatted.x,
+  levels = CTAS_pillar2_long$symptom_name_formatted.x[CTAS_pillar2_order],
+  ordered = TRUE
+)
+
+CTAS_pillar2_long$symptom_name_formatted.y = factor(
+  x = CTAS_pillar2_long$symptom_name_formatted.y,
+  levels = CTAS_pillar2_long$symptom_name_formatted.x[rev(CTAS_pillar2_order)],
+  ordered = TRUE
+)
+```
+
+```{r}
+CTAS_pillar2_heatmap <- ggplot(
+  data = CTAS_pillar2_long,
+  aes(
+    x = symptom_name_formatted.y,
+    y = symptom_name_formatted.x
+    )
+  ) +
+  geom_tile(aes(fill = value)) +
+  theme_minimal() +
+  z_axis_scale + 
+  heatmap_theme +
+  xlab("Symptom") +
+  labs(
+     title = 'a',
+     fill = "Jaccard distance") 
+
+CTAS_pillar2_heatmap
+```
+
+### Arranging
+
+```{r}
+CTAS_pillar2_DendroHeatmap = ggdraw() +
+  draw_plot(CTAS_pillar2_heatmap, x = 0, y = 0, width = .45, height = 1) +
+  draw_plot(CTAS_pillar2_dendrogram, x = 0.42, y = 0.06, width = 0.56, height = 0.81)
+
+# ggsave(
+#   'Figures/HeirarchalClustering/CTAS_pillar2_DendroHeatmap.png',
+#   plot = CTAS_pillar2_DendroHeatmap, width = 12)
+```
+
+# Pillar 2 sgss
+
+```{r}
+CTAS_sgss_dendro_dd_row = as.dendrogram(
+  hclust(
+    CTAS_sgss_dist,
+    method = 'complete'
+    )
+  )
+CTAS_sgss_dendro_data = dendro_data(CTAS_sgss_dendro_dd_row)
+```
+
+```{r}
+CTAS_sgss_dendro_data$labels = CTAS_sgss_dendro_data$labels %>% 
+  left_join(CTAS_sgss_symptom_names_df, by = c('label' = 'symptom_name_raw'))
+```
+
+```{r}
+CTAS_sgss_dendrogram <- ggplot(segment(CTAS_sgss_dendro_data)) +
+  geom_segment(
+    aes(x=x, y=y, xend=xend, yend=yend)) + 
+  geom_text(
+    data=label(CTAS_sgss_dendro_data),
+    aes(
+      label=symptom_name_formatted_with_perc,
+      x=x,
+      y=-0.05,
+      angle='0',
+      hjust = 1,
+      label_size = text_size)) + 
+  geom_point(
+    data = CTAS_sgss_dendro_data$labels,
+    aes(
+      x=x,
+      y=0,
+      size=proportion_of_cases_with_symptom*100,
+      color=category)) +
+  labs(
+    size = 'Cases with symptom (%)',
+    color = 'Category'
+    ) + 
+  theme_cowplot(font_size = 12) + 
+  remove_axis_arrange_legend +
+  shifted_y_scale +
+  colour_scale_all +
+  size_scaling +
+  coord_flip() +
+  category_legend
+CTAS_sgss_dendrogram
+```
+
+### Heatmap
+
+```{r}
+# get the ordering from the dendrogram
+CTAS_sgss_order = order.dendrogram(CTAS_sgss_dendro_dd_row)
+
+# Order the levels according to their position in the dendrogram
+CTAS_sgss_long$symptom_name_formatted.x = factor(
+  x = CTAS_sgss_long$symptom_name_formatted.x,
+  levels = CTAS_sgss_long$symptom_name_formatted.x[CTAS_sgss_order],
+  ordered = TRUE
+)
+CTAS_sgss_long$symptom_name_formatted.y = factor(
+  x = CTAS_sgss_long$symptom_name_formatted.y,
+  levels = CTAS_sgss_long$symptom_name_formatted.x[rev(CTAS_sgss_order)],
+  ordered = TRUE
+)
+```
+
+```{r}
+CTAS_SGSS_heatmap <- ggplot(
+  data = CTAS_sgss_long,
+  aes(
+    x = symptom_name_formatted.y,
+    y = symptom_name_formatted.x
+    )
+  ) +
+  geom_tile(aes(fill = value)) +
+  theme_minimal() +  
+  z_axis_scale +
+  heatmap_theme +
+  xlab("Symptom") +
+  labs(
+    title = 'b',
+    fill = "Jaccard distance")
+CTAS_SGSS_heatmap
+```
+
+
+```{r}
+CTAS_SGSS_DendroHeatmap = ggdraw() +
+  draw_plot(CTAS_SGSS_heatmap, x = 0, y = 0, width = .45, height = 1) +
+  draw_plot(CTAS_sgss_dendrogram, x = 0.42, y = 0.06, width = 0.56, height = 0.81)
+
+# ggsave(
+#   'Figures/HeirarchalClustering/CTAS_SGSS_DendroHeatmap.png',
+#   plot = CTAS_SGSS_DendroHeatmap, width = 12)
+```
+
+## ONS - all
+
+```{r}
+ONS_dendro_dd_row = as.dendrogram(
+  hclust(
+    ONS_dist,
+    method = 'complete'
+    )
+  )
+ONS_dendro_data = dendro_data(ONS_dendro_dd_row)
+```
+
+```{r}
+ONS_dendro_data$labels = ONS_dendro_data$labels %>%
+  left_join(ONS_symptom_names_df,
+            by = c('label' = 'symptom_name_raw'))
+```
+
+```{r}
+ONS_dendrogram <- ggplot(segment(ONS_dendro_data)) +
+  geom_segment(
+    aes(x=x, y=y, xend=xend, yend=yend)) + 
+  geom_text(
+    data=label(ONS_dendro_data),
+    aes(
+      label=symptom_name_formatted_with_perc,
+      x=x,
+      y=-0.05,
+      angle='0',
+      hjust = 1,
+      label_size = text_size)) + 
+  geom_point(
+    data = ONS_dendro_data$labels,
+    aes(
+      x=x,
+      y=0,
+      size=proportion_fromsymptomatics,
+      color=category)) +
+  labs(
+    size = 'Cases with symptom (%)',
+    color = 'Category'
+    ) + 
+  theme_cowplot(font_size = 12) + 
+  remove_axis_arrange_legend +
+  shifted_y_scale +
+  colour_scale_all +
+  size_scaling + 
+  coord_flip() +
+  category_legend
+ONS_dendrogram
+```
+
+### Heatmap
+
+```{r}
+# get the ordering from the dendrogram
+ONS_order = order.dendrogram(ONS_dendro_dd_row)
+
+# Order the levels according to their position in the dendrogram
+ONS_long$symptom_name_formatted.x = factor(
+  x = ONS_long$symptom_name_formatted.x,
+  levels = ONS_long$symptom_name_formatted.x[ONS_order],
+  ordered = TRUE
+)
+ONS_long$symptom_name_formatted.y = factor(
+  x = ONS_long$symptom_name_formatted.y,
+  levels = ONS_long$symptom_name_formatted.x[rev(ONS_order)],
+  ordered = TRUE
+)
+```
+
+```{r}
+ONS_heatmap <- ggplot(
+  data = ONS_long,
+  aes(
+    x = symptom_name_formatted.y,
+    y = symptom_name_formatted.x
+    )
+  ) +
+  geom_tile(aes(fill = value)) +
+  theme_minimal() + 
+  z_axis_scale +
+  heatmap_theme +
+  xlab("Symptom") +
+  labs(
+    title = 'd',
+    fill = "Jaccard distance")
+ONS_heatmap
+```
+
+### Arranging
+
+```{r}
+ONS_DendroHeatmap = ggdraw() +
+  draw_plot(ONS_heatmap, x = 0, y = 0, width = .45, height = 1) +
+  draw_plot(ONS_dendrogram, x = 0.42, y = 0.05, width = 0.55, height = 0.81)
+
+# ggsave(
+#   'Figures/HeirarchalClustering/ONS_DendroHeatmap.png',
+#   plot = ONS_DendroHeatmap, width = 12)
+```
+
+## ONS - children
+
+```{r}
+ONS_children_dendro_dd_row = as.dendrogram(
+  hclust(
+    ONS_dist_children,
+    method = 'complete'
+    )
+  )
+ONS_children_dendro_data = dendro_data(ONS_children_dendro_dd_row)
+```
+
+```{r}
+ONS_children_dendro_data$labels = ONS_children_dendro_data$labels %>%
+  left_join(ONS_symptom_names_df_children,
+            by = c('label' = 'symptom_name_raw'))
+```
+
+```{r}
+ONS_children_dendrogram <- ggplot(segment(ONS_children_dendro_data)) +
+  geom_segment(
+    aes(x=x, y=y, xend=xend, yend=yend)) + 
+  geom_text(
+    data=label(ONS_children_dendro_data),
+    aes(
+      label=symptom_name_formatted_with_perc,
+      x=x,
+      y=-0.05,
+      angle='0',
+      hjust = 1,
+      label_size = text_size)) + 
+  geom_point(
+    data = ONS_children_dendro_data$labels,
+    aes(
+      x=x,
+      y=0,
+      size=proportion_fromsymptomatics,
+      color=category)) +
+  labs(
+    size = 'Cases with symptom (%)',
+    color = 'Category'
+    ) + 
+  theme_cowplot(font_size = 12) + 
+  remove_axis_arrange_legend +
+  shifted_y_scale +
+  colour_scale_all +
+  size_scaling + 
+  coord_flip() +
+  category_legend
+ONS_children_dendrogram
+```
+
+### Heatmap
+
+```{r}
+# get the ordering from the dendrogram
+ONS_order = order.dendrogram(ONS_children_dendro_dd_row)
+
+# Order the levels according to their position in the dendrogram
+ONS_children_long$symptom_name_formatted.x = factor(
+  x = ONS_children_long$symptom_name_formatted.x,
+  levels = ONS_children_long$symptom_name_formatted.x[ONS_order],
+  ordered = TRUE
+)
+ONS_children_long$symptom_name_formatted.y = factor(
+  x = ONS_children_long$symptom_name_formatted.y,
+  levels = ONS_children_long$symptom_name_formatted.x[rev(ONS_order)],
+  ordered = TRUE
+)
+```
+
+```{r}
+ONS_children_heatmap <- ggplot(
+  data = ONS_children_long,
+  aes(
+    x = symptom_name_formatted.y,
+    y = symptom_name_formatted.x
+    )
+  ) +
+  geom_tile(aes(fill = value)) +
+  theme_minimal() + 
+  z_axis_scale +
+  heatmap_theme +
+  xlab("Symptom") +
+  labs(
+    title= 'a',
+    fill = "Jaccard distance")
+ONS_children_heatmap
+```
+
+### Arranging
+
+```{r}
+ONS_children_DendroHeatmap = ggdraw() +
+  draw_plot(ONS_children_heatmap, x = 0, y = 0, width = .45, height = 1) +
+  draw_plot(ONS_children_dendrogram, x = 0.42, y = 0.05, width = 0.56, height = 0.81)
+
+# ggsave(
+#   'Figures/HeirarchalClustering/ONS_children_DendroHeatmap.png',
+#   plot = ONS_children_DendroHeatmap, width = 12)
+```
+
+## ONS - adults
+
+```{r}
+ONS_adults_dendro_dd_row = as.dendrogram(
+  hclust(
+    ONS_dist_adults,
+    method = 'complete'
+    )
+  )
+ONS_adults_dendro_data = dendro_data(ONS_adults_dendro_dd_row)
+```
+
+```{r}
+ONS_adults_dendro_data$labels = ONS_adults_dendro_data$labels %>%
+  left_join(ONS_symptom_names_df_adults,
+            by = c('label' = 'symptom_name_raw'))
+```
+
+```{r}
+ONS_adults_dendrogram <- ggplot(segment(ONS_adults_dendro_data)) +
+  geom_segment(
+    aes(x=x, y=y, xend=xend, yend=yend)) + 
+  geom_text(
+    data=label(ONS_adults_dendro_data),
+    aes(
+      label=symptom_name_formatted_with_perc,
+      x=x,
+      y=-0.05,
+      angle='0',
+      hjust = 1,
+      label_size = text_size)) + 
+  geom_point(
+    data = ONS_adults_dendro_data$labels,
+    aes(
+      x=x,
+      y=0,
+      size=proportion_fromsymptomatics,
+      color=category)) +
+  labs(
+    size = 'Cases with symptom (%)',
+    color = 'Category'
+    ) + 
+  theme_cowplot(font_size = 12) + 
+  remove_axis_arrange_legend +
+  shifted_y_scale +
+  colour_scale_all +
+  size_scaling + 
+  coord_flip() +
+  category_legend
+ONS_adults_dendrogram
+```
+
+### Heatmap
+
+```{r}
+# get the ordering from the dendrogram
+ONS_order = order.dendrogram(ONS_adults_dendro_dd_row)
+
+# Order the levels according to their position in the dendrogram
+ONS_adults_long$symptom_name_formatted.x = factor(
+  x = ONS_adults_long$symptom_name_formatted.x,
+  levels = ONS_adults_long$symptom_name_formatted.x[ONS_order],
+  ordered = TRUE
+)
+ONS_adults_long$symptom_name_formatted.y = factor(
+  x = ONS_adults_long$symptom_name_formatted.y,
+  levels = ONS_adults_long$symptom_name_formatted.x[rev(ONS_order)],
+  ordered = TRUE
+)
+```
+
+```{r}
+ONS_adults_heatmap <- ggplot(
+  data = ONS_adults_long,
+  aes(
+    x = symptom_name_formatted.y,
+    y = symptom_name_formatted.x
+    )
+  ) +
+  geom_tile(aes(fill = value)) +
+  theme_minimal() + 
+  z_axis_scale +
+  heatmap_theme +
+  xlab("Symptom") +
+  labs(
+    title = 'b',
+    fill = "Jaccard distance")
+ONS_adults_heatmap
+```
+
+### Arranging
+
+```{r}
+ONS_adults_DendroHeatmap = ggdraw() +
+  draw_plot(ONS_adults_heatmap, x = 0, y = 0, width = .45, height = 1) +
+  draw_plot(ONS_adults_dendrogram, x = 0.42, y = 0.05, width = 0.56, height = 0.81)
+
+# ggsave(
+#   'Figures/HeirarchalClustering/ONS_adults_DendroHeatmap.png',
+#   plot = ONS_adults_DendroHeatmap, width = 12)
+```
+
+## ONS - elders
+
+```{r}
+ONS_elder_dendro_dd_row = as.dendrogram(
+  hclust(
+    ONS_dist_elder,
+    method = 'complete'
+    )
+  )
+ONS_elder_dendro_data = dendro_data(ONS_elder_dendro_dd_row)
+```
+
+```{r}
+ONS_elder_dendro_data$labels = ONS_elder_dendro_data$labels %>%
+  left_join(ONS_symptom_names_df_elder,
+            by = c('label' = 'symptom_name_raw'))
+```
+
+```{r}
+ONS_elder_dendrogram <- ggplot(segment(ONS_elder_dendro_data)) +
+  geom_segment(
+    aes(x=x, y=y, xend=xend, yend=yend)) + 
+  geom_text(
+    data=label(ONS_elder_dendro_data),
+    aes(
+      label=symptom_name_formatted_with_perc,
+      x=x,
+      y=-0.05,
+      angle='0',
+      hjust = 1,
+      label_size = text_size)) + 
+  geom_point(
+    data = ONS_elder_dendro_data$labels,
+    aes(
+      x=x,
+      y=0,
+      size=proportion_fromsymptomatics,
+      color=category)) +
+  labs(
+    size = 'Cases with symptom (%)',
+    color = 'Category'
+    ) + 
+  theme_cowplot(font_size = 12) + 
+  remove_axis_arrange_legend +
+  shifted_y_scale +
+  colour_scale_all +
+  size_scaling + 
+  coord_flip() +
+  category_legend
+ONS_elder_dendrogram
+```
+
+### Heatmap
+
+```{r}
+# get the ordering from the dendrogram
+ONS_order = order.dendrogram(ONS_elder_dendro_dd_row)
+
+# Order the levels according to their position in the dendrogram
+ONS_elder_long$symptom_name_formatted.x = factor(
+  x = ONS_elder_long$symptom_name_formatted.x,
+  levels = ONS_elder_long$symptom_name_formatted.x[ONS_order],
+  ordered = TRUE
+)
+ONS_elder_long$symptom_name_formatted.y = factor(
+  x = ONS_elder_long$symptom_name_formatted.y,
+  levels = ONS_elder_long$symptom_name_formatted.x[rev(ONS_order)],
+  ordered = TRUE
+)
+```
+
+```{r}
+ONS_elder_heatmap <- ggplot(
+  data = ONS_elder_long,
+  aes(
+    x = symptom_name_formatted.y,
+    y = symptom_name_formatted.x
+    )
+  ) +
+  geom_tile(aes(fill = value)) +
+  theme_minimal() + 
+  z_axis_scale +
+  heatmap_theme +
+  xlab("Symptom") +
+  labs(
+    title = 'c',
+    fill = "Jaccard distance")
+ONS_elder_heatmap
+```
+
+### Arranging
+
+```{r}
+ONS_elder_DendroHeatmap = ggdraw() +
+  draw_plot(ONS_elder_heatmap, x = 0, y = 0, width = .45, height = 1) +
+  draw_plot(ONS_elder_dendrogram, x = 0.42, y = 0.05, width = 0.56, height = 0.81)
+
+# ggsave(
+#   'Figures/HeirarchalClustering/ONS_elder_DendroHeatmap.png',
+#   plot = ONS_elder_DendroHeatmap, width = 12)
+```
+
+## Zoe all
+
+```{r}
+CSS_dendro_dd_row = as.dendrogram(
+  hclust(
+    CSS_dist,
+    method = 'complete'
+    )
+  )
+CSS_dendro_data = dendro_data(CSS_dendro_dd_row)
+```
+
+```{r}
+CSS_dendro_data$labels = CSS_dendro_data$labels %>% 
+  left_join(CSS_symptom_names_df, by = c('label' = 'symptom_name_raw'))
+```
+
+```{r}
+CSS_dendrogram <- ggplot(segment(CSS_dendro_data)) +
+  geom_segment(
+    aes(x=x, y=y, xend=xend, yend=yend)) + 
+  geom_text(
+    data=label(CSS_dendro_data),
+    aes(
+      label=symptom_name_formatted_with_perc,
+      x=x,
+      y=-0.05,
+      angle='0',
+      hjust = 1,
+      label_size = text_size)) +
+  geom_point(
+    data = CSS_dendro_data$labels,
+    aes(
+      x=x,
+      y=0,
+      size=proportion*100,
+      color=category
+    )) +
+  labs(
+    size = 'Cases with symptom (%)',
+    color = 'Category'
+    ) + 
+  theme_cowplot(font_size = 12) + 
+  remove_axis_arrange_legend + 
+  shifted_y_scale +
+  colour_scale_all +
+  coord_flip() +
+  category_legend +
+  size_scaling
+CSS_dendrogram
+```
+
+### Heatmap
+
+```{r}
+# get the ordering from the dendrogram
+CSS_order = order.dendrogram(CSS_dendro_dd_row)
+
+# Order the levels according to their position in the dendrogram
+CSS_long$symptom_name_formatted.x = factor(
+  x = CSS_long$symptom_name_formatted.x,
+  levels = CSS_long$symptom_name_formatted.x[CSS_order],
+  ordered = TRUE
+)
+CSS_long$symptom_name_formatted.y = factor(
+  x = CSS_long$symptom_name_formatted.y,
+  levels = CSS_long$symptom_name_formatted.x[rev(CSS_order)],
+  ordered = TRUE
+)
+```
+
+```{r}
+CSS_heatmap <- ggplot(
+  data = CSS_long,
+  aes(
+    x = symptom_name_formatted.y,
+    y = symptom_name_formatted.x
+    )
+  ) +
+  geom_tile(aes(fill = value)) +
+  theme_minimal() + 
+  z_axis_scale +
+  heatmap_theme +
+  xlab("Symptom") +
+  labs(
+    title = 'c',
+    fill = "Jaccard distance")
+CSS_heatmap
+```
+
+### Arranging
+
+```{r}
+CSS_DendroHeatmap = ggdraw() +
+  draw_plot(CSS_heatmap, x = 0, y = 0, width = .45, height = 1) +
+  draw_plot(CSS_dendrogram, x = 0.435, y = 0.0525, width = 0.56, height = 0.815)
+
+# ggsave(
+#   'Figures/HeirarchalClustering/Zoe_DendroHeatmap.png',
+#   plot = CSS_DendroHeatmap, width = 12)
+```
+
+## Zoe children
+
+```{r}
+zoe_dendro_dd_row = as.dendrogram(
+  hclust(
+    zoe_dist_children,
+    method = 'complete'
+    )
+  )
+zoe_dendro_data = dendro_data(zoe_dendro_dd_row)
+```
+
+```{r}
+zoe_dendro_data$labels = zoe_dendro_data$labels %>% 
+  left_join(zoe_symptom_names_df_children, by = c('label' = 'symptom_name_raw'))
+```
+
+```{r}
+zoe_dendrogram_children <- ggplot(segment(zoe_dendro_data)) +
+  geom_segment(
+    aes(x=x, y=y, xend=xend, yend=yend)) + 
+  geom_text(
+    data=label(zoe_dendro_data),
+    aes(
+      label=symptom_name_formatted_with_perc,
+      x=x,
+      y=-0.05,
+      angle='0',
+      hjust = 1,
+      label_size = text_size)) +
+  geom_point(
+    data = zoe_dendro_data$labels,
+    aes(
+      x=x,
+      y=0,
+      size=proportion*100,
+      color=category
+    )) +
+  labs(
+    size = 'Cases with symptom (%)',
+    color = 'Category'
+    ) + 
+  theme_cowplot(font_size = 12) + 
+  remove_axis_arrange_legend + 
+  shifted_y_scale +
+  colour_scale_all +
+  coord_flip() +
+  category_legend +
+  size_scaling
+zoe_dendrogram_children
+```
+
+### Heatmap
+
+```{r}
+# get the ordering from the dendrogram
+zoe_order = order.dendrogram(zoe_dendro_dd_row)
+
+# Order the levels according to their position in the dendrogram
+Zoe_long_children$symptom_name_formatted.x = factor(
+  x = Zoe_long_children$symptom_name_formatted.x,
+  levels = Zoe_long_children$symptom_name_formatted.x[zoe_order],
+  ordered = TRUE
+)
+Zoe_long_children$symptom_name_formatted.y = factor(
+  x = Zoe_long_children$symptom_name_formatted.y,
+  levels = Zoe_long_children$symptom_name_formatted.x[rev(zoe_order)],
+  ordered = TRUE
+)
+```
+
+```{r}
+Zoe_heatmap_children <- ggplot(
+  data = Zoe_long_children,
+  aes(
+    x = symptom_name_formatted.y,
+    y = symptom_name_formatted.x
+    )
+  ) +
+  geom_tile(aes(fill = value)) +
+  theme_minimal() + 
+  z_axis_scale +
+  heatmap_theme +
+  xlab("Symptom") +
+  labs(
+    title = 'a',
+    fill = "Jaccard distance")
+Zoe_heatmap_children
+```
+
+### Arranging
+
+```{r}
+Zoe_DendroHeatmap_children = ggdraw() +
+  draw_plot(Zoe_heatmap_children, x = 0, y = 0, width = .45, height = 1) +
+  draw_plot(zoe_dendrogram_children, x = 0.435, y = 0.0525, width = 0.56, height = 0.815)
+
+# ggsave(
+#   'Figures/HeirarchalClustering/Zoe_DendroHeatmap_children.png',
+#   plot = Zoe_DendroHeatmap_children, width = 12)
+```
+
+## Zoe adults
+
+```{r}
+zoe_dendro_dd_row = as.dendrogram(
+  hclust(
+    zoe_dist_adults,
+    method = 'complete'
+    )
+  )
+zoe_dendro_data = dendro_data(zoe_dendro_dd_row)
+```
+
+```{r}
+zoe_dendro_data$labels = zoe_dendro_data$labels %>% 
+  left_join(zoe_symptom_names_df_adults, by = c('label' = 'symptom_name_raw'))
+```
+
+```{r}
+zoe_dendrogram_adults <- ggplot(segment(zoe_dendro_data)) +
+  geom_segment(
+    aes(x=x, y=y, xend=xend, yend=yend)) + 
+  geom_text(
+    data=label(zoe_dendro_data),
+    aes(
+      label=symptom_name_formatted_with_perc,
+      x=x,
+      y=-0.05,
+      angle='0',
+      hjust = 1,
+      label_size = text_size)) +
+  geom_point(
+    data = zoe_dendro_data$labels,
+    aes(
+      x=x,
+      y=0,
+      size=proportion*100,
+      color=category
+    )) +
+  labs(
+    size = 'Cases with symptom (%)',
+    color = 'Category'
+    ) + 
+  theme_cowplot(font_size = 12) + 
+  remove_axis_arrange_legend + 
+  shifted_y_scale +
+  colour_scale_all +
+  coord_flip() +
+  category_legend +
+  size_scaling
+zoe_dendrogram_adults
+```
+
+### Heatmap
+
+```{r}
+# get the ordering from the dendrogram
+zoe_order = order.dendrogram(zoe_dendro_dd_row)
+
+# Order the levels according to their position in the dendrogram
+Zoe_long_adults$symptom_name_formatted.x = factor(
+  x = Zoe_long_adults$symptom_name_formatted.x,
+  levels = Zoe_long_adults$symptom_name_formatted.x[zoe_order],
+  ordered = TRUE
+)
+Zoe_long_adults$symptom_name_formatted.y = factor(
+  x = Zoe_long_adults$symptom_name_formatted.y,
+  levels = Zoe_long_adults$symptom_name_formatted.x[rev(zoe_order)],
+  ordered = TRUE
+)
+```
+
+```{r}
+Zoe_heatmap_adults <- ggplot(
+  data = Zoe_long_adults,
+  aes(
+    x = symptom_name_formatted.y,
+    y = symptom_name_formatted.x
+    )
+  ) +
+  geom_tile(aes(fill = value)) +
+  theme_minimal() + 
+  z_axis_scale +
+  heatmap_theme +
+  xlab("Symptom") +
+  labs(
+    title = 'b',
+    fill = "Jaccard distance")
+Zoe_heatmap_adults
+```
+
+### Arranging
+
+```{r}
+Zoe_DendroHeatmap_adults = ggdraw() +
+  draw_plot(Zoe_heatmap_adults, x = 0, y = 0, width = .45, height = 1) +
+  draw_plot(zoe_dendrogram_adults, x = 0.435, y = 0.0525, width = 0.56, height = 0.815)
+
+# ggsave(
+#   'Figures/HeirarchalClustering/Zoe_DendroHeatmap_adults.png',
+#   plot = Zoe_DendroHeatmap_adults, width = 12)
+```
+
+## Zoe elders
+
+```{r}
+zoe_dendro_dd_row = as.dendrogram(
+  hclust(
+    zoe_dist_elder,
+    method = 'complete'
+    )
+  )
+zoe_dendro_data = dendro_data(zoe_dendro_dd_row)
+```
+
+```{r}
+zoe_dendro_data$labels = zoe_dendro_data$labels %>% 
+  left_join(zoe_symptom_names_df_elder, by = c('label' = 'symptom_name_raw'))
+```
+
+```{r}
+zoe_dendrogram_elder <- ggplot(segment(zoe_dendro_data)) +
+  geom_segment(
+    aes(x=x, y=y, xend=xend, yend=yend)) + 
+  geom_text(
+    data=label(zoe_dendro_data),
+    aes(
+      label=symptom_name_formatted_with_perc,
+      x=x,
+      y=-0.05,
+      angle='0',
+      hjust = 1,
+      label_size = text_size)) +
+  geom_point(
+    data = zoe_dendro_data$labels,
+    aes(
+      x=x,
+      y=0,
+      size=proportion*100,
+      color=category
+    )) +
+  labs(
+    size = 'Cases with symptom (%)',
+    color = 'Category'
+    ) + 
+  theme_cowplot(font_size = 12) + 
+  remove_axis_arrange_legend + 
+  shifted_y_scale +
+  colour_scale_all +
+  coord_flip() +
+  category_legend +
+  size_scaling
+zoe_dendrogram_elder
+```
+
+### Heatmap
+
+```{r}
+# get the ordering from the dendrogram
+zoe_order = order.dendrogram(zoe_dendro_dd_row)
+
+# Order the levels according to their position in the dendrogram
+Zoe_long_elder$symptom_name_formatted.x = factor(
+  x = Zoe_long_elder$symptom_name_formatted.x,
+  levels = Zoe_long_elder$symptom_name_formatted.x[zoe_order],
+  ordered = TRUE
+)
+Zoe_long_elder$symptom_name_formatted.y = factor(
+  x = Zoe_long_elder$symptom_name_formatted.y,
+  levels = Zoe_long_elder$symptom_name_formatted.x[rev(zoe_order)],
+  ordered = TRUE
+)
+```
+
+```{r}
+Zoe_heatmap_elder <- ggplot(
+  data = Zoe_long_elder,
+  aes(
+    x = symptom_name_formatted.y,
+    y = symptom_name_formatted.x
+    )
+  ) +
+  geom_tile(aes(fill = value)) +
+  theme_minimal() + 
+  z_axis_scale +
+  heatmap_theme +
+  xlab("Symptom") +
+  labs(
+    title = 'c',
+    fill = "Jaccard distance")
+Zoe_heatmap_elder
+```
+
+### Arranging
+
+```{r}
+Zoe_DendroHeatmap_elder = ggdraw() +
+  draw_plot(Zoe_heatmap_elder, x = 0, y = 0, width = .45, height = 1) +
+  draw_plot(zoe_dendrogram_elder, x = 0.435, y = 0.0525, width = 0.56, height = 0.815)
+
+# ggsave(
+#   'Figures/HeirarchalClustering/Zoe_DendroHeatmap_elder.png',
+#   plot = Zoe_DendroHeatmap_elder, width = 12)
+```
+
+
+## CTAS Pillar 2 - children
+
+```{r}
+p2_children_dendro_dd_row = as.dendrogram(
+  hclust(
+    p2_dist_children,
+    method = 'complete'
+    )
+  )
+p2_children_dendro_data = dendro_data(p2_children_dendro_dd_row)
+```
+
+```{r}
+p2_children_dendro_data$labels = p2_children_dendro_data$labels %>% 
+  left_join(
+    p2_symptom_names_df_children,
+    by = c('label' = 'symptom_name_raw')
+    )
+```
+
+```{r}
+p2_children_dendrogram <- ggplot(segment(p2_children_dendro_data)) +
+  geom_segment(
+    aes(x=x, y=y, xend=xend, yend=yend)) + 
+  geom_text(
+    data=label(p2_children_dendro_data),
+    aes(
+      label=symptom_name_formatted_with_perc,
+      x=x,
+      y=-0.05,
+      angle='0',
+      hjust = 1,
+      label_size = text_size)) +
+  geom_point(
+    data = p2_children_dendro_data$labels,
+    aes(
+      x=x,
+      y=0,
+      size=proportion_of_cases_with_symptom*100,
+      color=category)) +
+  labs(
+    size = 'Cases with symptom (%)',
+    color = 'Category') + 
+  theme_cowplot(font_size = 12) + 
+  remove_axis_arrange_legend + 
+  shifted_y_scale +
+  colour_scale_all + 
+  size_scaling + 
+  coord_flip() +
+  category_legend
+p2_children_dendrogram
+```
+
+### Heatmap
+
+```{r}
+# get the ordering from the dendrogram
+p2_children_order = order.dendrogram(p2_children_dendro_dd_row)
+
+# Order the levels according to their position in the dendrogram
+CTAS_p2_children_long$symptom_name_formatted.x = factor(
+  x = CTAS_p2_children_long$symptom_name_formatted.x,
+  levels = CTAS_p2_children_long$symptom_name_formatted.x[p2_children_order],
+  ordered = TRUE
+)
+
+CTAS_p2_children_long$symptom_name_formatted.y = factor(
+  x = CTAS_p2_children_long$symptom_name_formatted.y,
+  levels = CTAS_p2_children_long$symptom_name_formatted.x[rev(p2_children_order)],
+  ordered = TRUE
+)
+```
+
+```{r}
+p2_children_heatmap <- ggplot(
+  data = CTAS_p2_children_long,
+  aes(
+    x = symptom_name_formatted.y,
+    y = symptom_name_formatted.x
+    )
+  ) +
+  geom_tile(aes(fill = value)) +
+  theme_minimal() +  
+  z_axis_scale +
+  heatmap_theme +
+  xlab("Symptom") +
+  labs(
+    title = 'a',
+    fill = "Jaccard distance")
+p2_children_heatmap
+```
+
+### Arranging
+
+```{r}
+p2_children_DendroHeatmap = ggdraw() +
+  draw_plot(p2_children_heatmap, x = 0, y = 0, width = .45, height = 1) +
+  draw_plot(p2_children_dendrogram, x = 0.42, y = 0.06, width = 0.56, height = 0.81)
+
+# ggsave(
+#   'Figures/HeirarchalClustering/p2_children_DendroHeatmap.png',
+#   plot = p2_children_DendroHeatmap, width = 12)
+```
+
+## CTAS Pillar 2 - adults
+
+```{r}
+p2_adults_dendro_dd_row = as.dendrogram(
+  hclust(
+    p2_dist_adults,
+    method = 'complete'
+    )
+  )
+p2_adults_dendro_data = dendro_data(p2_adults_dendro_dd_row)
+```
+
+```{r}
+p2_adults_dendro_data$labels = p2_adults_dendro_data$labels %>% 
+  left_join(
+    p2_symptom_names_df_adults,
+    by = c('label' = 'symptom_name_raw')
+    )
+```
+
+```{r}
+p2_adults_dendrogram <- ggplot(segment(p2_adults_dendro_data)) +
+  geom_segment(
+    aes(x=x, y=y, xend=xend, yend=yend)) + 
+  geom_text(
+    data=label(p2_adults_dendro_data),
+    aes(
+      label=symptom_name_formatted_with_perc,
+      x=x,
+      y=-0.05,
+      angle='0',
+      hjust = 1,
+      label_size = text_size)) +
+  geom_point(
+    data = p2_adults_dendro_data$labels,
+    aes(
+      x=x,
+      y=0,
+      size=proportion_of_cases_with_symptom*100,
+      color=category)) +
+  labs(
+    size = 'Cases with symptom (%)',
+    color = 'Category') + 
+  theme_cowplot(font_size = 12) + 
+  remove_axis_arrange_legend + 
+  shifted_y_scale +
+  colour_scale_all + 
+  size_scaling + 
+  coord_flip() +
+  category_legend
+p2_adults_dendrogram
+```
+
+### Heatmap
+
+```{r}
+# get the ordering from the dendrogram
+p2_adults_order = order.dendrogram(p2_adults_dendro_dd_row)
+
+# Order the levels according to their position in the dendrogram
+CTAS_p2_adults_long$symptom_name_formatted.x = factor(
+  x = CTAS_p2_adults_long$symptom_name_formatted.x,
+  levels = CTAS_p2_adults_long$symptom_name_formatted.x[p2_adults_order],
+  ordered = TRUE
+)
+
+CTAS_p2_adults_long$symptom_name_formatted.y = factor(
+  x = CTAS_p2_adults_long$symptom_name_formatted.y,
+  levels = CTAS_p2_adults_long$symptom_name_formatted.x[rev(p2_adults_order)],
+  ordered = TRUE
+)
+```
+
+```{r}
+p2_adults_heatmap <- ggplot(
+  data = CTAS_p2_adults_long,
+  aes(
+    x = symptom_name_formatted.y,
+    y = symptom_name_formatted.x
+    )
+  ) +
+  geom_tile(aes(fill = value)) +
+  theme_minimal() +  
+  z_axis_scale +
+  heatmap_theme +
+  xlab("Symptom") +
+  labs(
+    title = 'b',
+    fill = "Jaccard distance")
+p2_adults_heatmap
+```
+
+### Arranging
+
+```{r}
+p2_adults_DendroHeatmap = ggdraw() +
+  draw_plot(p2_adults_heatmap, x = 0, y = 0, width = .45, height = 1) +
+  draw_plot(p2_adults_dendrogram, x = 0.42, y = 0.06, width = 0.56, height = 0.81)
+
+# ggsave(
+#   'Figures/HeirarchalClustering/p2_adults_DendroHeatmap.png',
+#   plot = p2_adults_DendroHeatmap, width = 12)
+```
+
+## CTAS Pillar 2 - children
+
+```{r}
+p2_elder_dendro_dd_row = as.dendrogram(
+  hclust(
+    p2_dist_elder,
+    method = 'complete'
+    )
+  )
+p2_elder_dendro_data = dendro_data(p2_elder_dendro_dd_row)
+```
+
+```{r}
+p2_elder_dendro_data$labels = p2_elder_dendro_data$labels %>% 
+  left_join(
+    p2_symptom_names_df_elder,
+    by = c('label' = 'symptom_name_raw')
+    )
+```
+
+```{r}
+p2_elder_dendrogram <- ggplot(segment(p2_elder_dendro_data)) +
+  geom_segment(
+    aes(x=x, y=y, xend=xend, yend=yend)) + 
+  geom_text(
+    data=label(p2_elder_dendro_data),
+    aes(
+      label=symptom_name_formatted_with_perc,
+      x=x,
+      y=-0.05,
+      angle='0',
+      hjust = 1,
+      label_size = text_size)) +
+  geom_point(
+    data = p2_elder_dendro_data$labels,
+    aes(
+      x=x,
+      y=0,
+      size=proportion_of_cases_with_symptom*100,
+      color=category)) +
+  labs(
+    size = 'Cases with symptom (%)',
+    color = 'Category') + 
+  theme_cowplot(font_size = 12) + 
+  remove_axis_arrange_legend + 
+  shifted_y_scale +
+  colour_scale_all + 
+  size_scaling + 
+  coord_flip() +
+  category_legend
+p2_elder_dendrogram
+```
+
+### Heatmap
+
+```{r}
+# get the ordering from the dendrogram
+p2_elder_order = order.dendrogram(p2_elder_dendro_dd_row)
+
+# Order the levels according to their position in the dendrogram
+CTAS_p2_elder_long$symptom_name_formatted.x = factor(
+  x = CTAS_p2_elder_long$symptom_name_formatted.x,
+  levels = CTAS_p2_elder_long$symptom_name_formatted.x[p2_elder_order],
+  ordered = TRUE
+)
+
+CTAS_p2_elder_long$symptom_name_formatted.y = factor(
+  x = CTAS_p2_elder_long$symptom_name_formatted.y,
+  levels = CTAS_p2_elder_long$symptom_name_formatted.x[rev(p2_elder_order)],
+  ordered = TRUE
+)
+```
+
+```{r}
+p2_elder_heatmap <- ggplot(
+  data = CTAS_p2_elder_long,
+  aes(
+    x = symptom_name_formatted.y,
+    y = symptom_name_formatted.x
+    )
+  ) +
+  geom_tile(aes(fill = value)) +
+  theme_minimal() +  
+  z_axis_scale +
+  heatmap_theme +
+  xlab("Symptom") +
+  labs(
+    title = 'c',
+    fill = "Jaccard distance") 
+p2_elder_heatmap
+```
+
+### Arranging
+
+```{r}
+p2_elder_DendroHeatmap = ggdraw() +
+  draw_plot(p2_elder_heatmap, x = 0, y = 0, width = .45, height = 1) +
+  draw_plot(p2_elder_dendrogram, x = 0.42, y = 0.06, width = 0.56, height = 0.81)
+
+# ggsave(
+#   'Figures/HeirarchalClustering/p2_elder_DendroHeatmap.png',
+#   plot = p2_elder_DendroHeatmap, width = 12)
+```
+
+## CTAS SGSS - children
+
+```{r}
+SGSS_children_dendro_dd_row = as.dendrogram(
+  hclust(
+    SGSS_dist_children,
+    method = 'complete'
+    )
+  )
+SGSS_children_dendro_data = dendro_data(SGSS_children_dendro_dd_row)
+```
+
+```{r}
+SGSS_children_dendro_data$labels = SGSS_children_dendro_data$labels %>% 
+  left_join(
+    SGSS_symptom_names_df_children,
+    by = c('label' = 'symptom_name_raw')
+    )
+```
+
+```{r}
+SGSS_children_dendrogram <- ggplot(segment(SGSS_children_dendro_data)) +
+  geom_segment(
+    aes(x=x, y=y, xend=xend, yend=yend)) + 
+  geom_text(
+    data=label(SGSS_children_dendro_data),
+    aes(
+      label=symptom_name_formatted_with_perc,
+      x=x,
+      y=-0.05,
+      angle='0',
+      hjust = 1,
+      label_size = text_size)) +
+  geom_point(
+    data = SGSS_children_dendro_data$labels,
+    aes(
+      x=x,
+      y=0,
+      size=proportion_of_cases_with_symptom*100,
+      color=category)) +
+  labs(
+    size = 'Cases with symptom (%)',
+    color = 'Category') + 
+  theme_cowplot(font_size = 12) + 
+  remove_axis_arrange_legend + 
+  shifted_y_scale +
+  colour_scale_all + 
+  size_scaling + 
+  coord_flip() +
+  category_legend
+SGSS_children_dendrogram
+```
+
+### Heatmap
+
+```{r}
+# get the ordering from the dendrogram
+SGSS_children_order = order.dendrogram(SGSS_children_dendro_dd_row)
+
+# Order the levels according to their position in the dendrogram
+CTAS_SGSS_children_long$symptom_name_formatted.x = factor(
+  x = CTAS_SGSS_children_long$symptom_name_formatted.x,
+  levels = CTAS_SGSS_children_long$symptom_name_formatted.x[SGSS_children_order],
+  ordered = TRUE
+)
+
+CTAS_SGSS_children_long$symptom_name_formatted.y = factor(
+  x = CTAS_SGSS_children_long$symptom_name_formatted.y,
+  levels = CTAS_SGSS_children_long$symptom_name_formatted.x[rev(SGSS_children_order)],
+  ordered = TRUE
+)
+```
+
+```{r}
+SGSS_children_heatmap <- ggplot(
+  data = CTAS_SGSS_children_long,
+  aes(
+    x = symptom_name_formatted.y,
+    y = symptom_name_formatted.x
+    )
+  ) +
+  geom_tile(aes(fill = value)) +
+  theme_minimal() +  
+  z_axis_scale +
+  heatmap_theme +
+  xlab("Symptom") +
+  labs(
+    title = 'a',
+    fill = "Jaccard distance")
+SGSS_children_heatmap
+```
+
+### Arranging
+
+```{r}
+SGSS_children_DendroHeatmap = ggdraw() +
+  draw_plot(SGSS_children_heatmap, x = 0, y = 0, width = .45, height = 1) +
+  draw_plot(SGSS_children_dendrogram, x = 0.42, y = 0.06, width = 0.56, height = 0.81)
+
+# ggsave(
+#   'Figures/HeirarchalClustering/SGSS_children_DendroHeatmap.png',
+#   plot = SGSS_children_DendroHeatmap, width = 12)
+```
+
+## CTAS Pillar 2 - adults
+
+```{r}
+SGSS_adults_dendro_dd_row = as.dendrogram(
+  hclust(
+    SGSS_dist_adults,
+    method = 'complete'
+    )
+  )
+SGSS_adults_dendro_data = dendro_data(SGSS_adults_dendro_dd_row)
+```
+
+```{r}
+SGSS_adults_dendro_data$labels = SGSS_adults_dendro_data$labels %>% 
+  left_join(
+    SGSS_symptom_names_df_adults,
+    by = c('label' = 'symptom_name_raw')
+    )
+```
+
+```{r}
+SGSS_adults_dendrogram <- ggplot(segment(SGSS_adults_dendro_data)) +
+  geom_segment(
+    aes(x=x, y=y, xend=xend, yend=yend)) + 
+  geom_text(
+    data=label(SGSS_adults_dendro_data),
+    aes(
+      label=symptom_name_formatted_with_perc,
+      x=x,
+      y=-0.05,
+      angle='0',
+      hjust = 1,
+      label_size = text_size)) +
+  geom_point(
+    data = SGSS_adults_dendro_data$labels,
+    aes(
+      x=x,
+      y=0,
+      size=proportion_of_cases_with_symptom*100,
+      color=category)) +
+  labs(
+    size = 'Cases with symptom (%)',
+    color = 'Category') + 
+  theme_cowplot(font_size = 12) + 
+  remove_axis_arrange_legend + 
+  shifted_y_scale +
+  colour_scale_all + 
+  size_scaling + 
+  coord_flip() +
+  category_legend
+SGSS_adults_dendrogram
+```
+
+### Heatmap
+
+```{r}
+# get the ordering from the dendrogram
+SGSS_adults_order = order.dendrogram(SGSS_adults_dendro_dd_row)
+
+# Order the levels according to their position in the dendrogram
+CTAS_SGSS_adults_long$symptom_name_formatted.x = factor(
+  x = CTAS_SGSS_adults_long$symptom_name_formatted.x,
+  levels = CTAS_SGSS_adults_long$symptom_name_formatted.x[SGSS_adults_order],
+  ordered = TRUE
+)
+
+CTAS_SGSS_adults_long$symptom_name_formatted.y = factor(
+  x = CTAS_SGSS_adults_long$symptom_name_formatted.y,
+  levels = CTAS_SGSS_adults_long$symptom_name_formatted.x[rev(SGSS_adults_order)],
+  ordered = TRUE
+)
+```
+
+```{r}
+SGSS_adults_heatmap <- ggplot(
+  data = CTAS_SGSS_adults_long,
+  aes(
+    x = symptom_name_formatted.y,
+    y = symptom_name_formatted.x
+    )
+  ) +
+  geom_tile(aes(fill = value)) +
+  theme_minimal() +  
+  z_axis_scale +
+  heatmap_theme +
+  xlab("Symptom") +
+  labs(
+    title = 'b',
+    fill = "Jaccard distance")
+SGSS_adults_heatmap
+```
+
+### Arranging
+
+```{r}
+SGSS_adults_DendroHeatmap = ggdraw() +
+  draw_plot(SGSS_adults_heatmap, x = 0, y = 0, width = .45, height = 1) +
+  draw_plot(SGSS_adults_dendrogram, x = 0.42, y = 0.06, width = 0.56, height = 0.81)
+
+# ggsave(
+#   'Figures/HeirarchalClustering/SGSS_adults_DendroHeatmap.png',
+#   plot = SGSS_adults_DendroHeatmap, width = 12)
+```
+
+## CTAS Pillar 2 - children
+
+```{r}
+SGSS_elder_dendro_dd_row = as.dendrogram(
+  hclust(
+    SGSS_dist_elder,
+    method = 'complete'
+    )
+  )
+SGSS_elder_dendro_data = dendro_data(SGSS_elder_dendro_dd_row)
+```
+
+```{r}
+SGSS_elder_dendro_data$labels = SGSS_elder_dendro_data$labels %>% 
+  left_join(
+    SGSS_symptom_names_df_elder,
+    by = c('label' = 'symptom_name_raw')
+    )
+```
+
+```{r}
+SGSS_elder_dendrogram <- ggplot(segment(SGSS_elder_dendro_data)) +
+  geom_segment(
+    aes(x=x, y=y, xend=xend, yend=yend)) + 
+  geom_text(
+    data=label(SGSS_elder_dendro_data),
+    aes(
+      label=symptom_name_formatted_with_perc,
+      x=x,
+      y=-0.05,
+      angle='0',
+      hjust = 1,
+      label_size = text_size)) +
+  geom_point(
+    data = SGSS_elder_dendro_data$labels,
+    aes(
+      x=x,
+      y=0,
+      size=proportion_of_cases_with_symptom*100,
+      color=category)) +
+  labs(
+    size = 'Cases with symptom (%)',
+    color = 'Category') + 
+  theme_cowplot(font_size = 12) + 
+  remove_axis_arrange_legend + 
+  shifted_y_scale +
+  colour_scale_all + 
+  size_scaling + 
+  coord_flip() +
+  category_legend
+SGSS_elder_dendrogram
+```
+
+### Heatmap
+
+```{r}
+# get the ordering from the dendrogram
+SGSS_elder_order = order.dendrogram(SGSS_elder_dendro_dd_row)
+
+# Order the levels according to their position in the dendrogram
+CTAS_SGSS_elder_long$symptom_name_formatted.x = factor(
+  x = CTAS_SGSS_elder_long$symptom_name_formatted.x,
+  levels = CTAS_SGSS_elder_long$symptom_name_formatted.x[SGSS_elder_order],
+  ordered = TRUE
+)
+
+CTAS_SGSS_elder_long$symptom_name_formatted.y = factor(
+  x = CTAS_SGSS_elder_long$symptom_name_formatted.y,
+  levels = CTAS_SGSS_elder_long$symptom_name_formatted.x[rev(SGSS_elder_order)],
+  ordered = TRUE
+)
+```
+
+```{r}
+SGSS_elder_heatmap <- ggplot(
+  data = CTAS_SGSS_elder_long,
+  aes(
+    x = symptom_name_formatted.y,
+    y = symptom_name_formatted.x
+    )
+  ) +
+  geom_tile(aes(fill = value)) +
+  theme_minimal() +  
+  z_axis_scale +
+  heatmap_theme +
+  xlab("Symptom") +
+  labs(
+    title = 'c',
+    fill = "Jaccard distance")
+SGSS_elder_heatmap
+```
+
+### Arranging
+
+```{r}
+SGSS_elder_DendroHeatmap = ggdraw() +
+  draw_plot(SGSS_elder_heatmap, x = 0, y = 0, width = .45, height = 1) +
+  draw_plot(SGSS_elder_dendrogram, x = 0.42, y = 0.06, width = 0.56, height = 0.81)
+
+# ggsave(
+#   'Figures/HeirarchalClustering/SGSS_elder_DendroHeatmap.png',
+#   plot = SGSS_elder_DendroHeatmap, width = 12)
+```
+
+## Arrange all the dendroheatmaps
+
+```{r}
+arranged = ggarrange(
+  CTAS_pillar2_DendroHeatmap,
+  CTAS_SGSS_DendroHeatmap,
+  CSS_DendroHeatmap,
+  ONS_DendroHeatmap,
+  nrow = 2,
+  ncol = 2
+)
+
+ggsave('Figures/HeirarchalClustering/ArrangedDendroHeatmapEntirePopulations.png',
+       arranged,
+       width = 27,
+       height = 15)
+```
+
+```{r}
+arranged = ggarrange(
+  Zoe_DendroHeatmap_children,
+  Zoe_DendroHeatmap_adults,
+  Zoe_DendroHeatmap_elder,
+  nrow = 3
+)
+
+ggsave('Figures/HeirarchalClustering/ArrangedDendroHeatmap_ZoeAgeStratified.png',
+       arranged,
+       width = 12,
+       height = 21)
+```
+
+```{r}
+arranged = ggarrange(
+  p2_children_DendroHeatmap,
+  p2_adults_DendroHeatmap,
+  p2_elder_DendroHeatmap,
+  nrow = 3
+)
+
+ggsave('Figures/HeirarchalClustering/ArrangedDendroHeatmap_P2AgeStratified.png',
+       arranged,
+       width = 12,
+       height = 21)
+```
+
+
+```{r}
+arranged = ggarrange(
+  ONS_children_DendroHeatmap,
+  ONS_adults_DendroHeatmap,
+  ONS_elder_DendroHeatmap,
+  nrow = 3
+)
+
+ggsave('Figures/HeirarchalClustering/ArrangedDendroHeatmap_ONSAgeStratified.png',
+       arranged,
+       width = 12,
+       height = 21)
+```
+
+```{r}
+arranged = ggarrange(
+  SGSS_children_DendroHeatmap,
+  SGSS_adults_DendroHeatmap,
+  SGSS_elder_DendroHeatmap,
+  nrow = 3
+)
+
+ggsave('Figures/HeirarchalClustering/ArrangedDendroHeatmap_SGSSAgeStratified.png',
+       arranged,
+       width = 12,
+       height = 21)
+```
+
